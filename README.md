@@ -1,12 +1,14 @@
-# New Next Project
+# Expense Tracker
 
-This project was created from the Spiced Academy `next` template.
+HELLOOOO, WHAZZUUUP? 🙌
 
-You can download the project by running this command in your terminal:
+This is a Next.js financial tracking app to finally solve the mystery of where your money sneaks off to every month. 🕵️‍♂️💸
 
-```bash
-npx -y ghcd@latest spiced-academy/fs-web-exercises/tree/main/templates/next my-app -i
-```
+Forget the "Where the heck did all my fckng money go?" meltdown.
+I've got colorful charts, simple lists, & a reality check ready for you. 💀
+
+No more Excel horror shows.
+Just fun (or panic) while tracking your precious cash! 🪙✨
 
 ## Development
 
