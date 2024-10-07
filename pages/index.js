@@ -1,7 +1,10 @@
+import LoginButton from "@/components/LoginButton";
+
 export default function HomePage() {
   return (
     <div>
-      <h1>Hello from Next.js</h1>
+      <h1>Finance Tracker</h1>
+      <LoginButton />
     </div>
   );
 }
