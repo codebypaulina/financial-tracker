@@ -6,7 +6,7 @@ const transactionSchema = new Schema(
   {
     type: {
       type: String,
-      enum: ["Income", "Expense"], // kann nur "Income" oder "Expense" sein
+      enum: ["Income", "Expense"], // stellt sicher, dass nur "Income" oder "Expense" sein kann
       required: true,
     },
     category: {
