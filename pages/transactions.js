@@ -14,8 +14,8 @@ export default function TransactionsPage() {
       <ul>
         {transactions.map((transaction) => (
           <li key={transaction._id}>
-            <strong>{transaction.type}</strong> | {transaction.description} |
-            {transaction.amount} € |
+            <strong>{transaction.type}</strong> | {transaction.amount} € |{" "}
+            {transaction.description} |{" "}
             <span>
               {transaction.category ? transaction.category.name : "No Category"}
             </span>
