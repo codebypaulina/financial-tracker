@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import Link from "next/link";
+import { useRouter } from "next/router";
 
 import HomeIcon from "../public/icons/home.svg";
 import TransactionsIcon from "../public/icons/transactions.svg";
@@ -8,44 +9,46 @@ import CategoriesIcon from "../public/icons/categories.svg";
 import ProfileIcon from "../public/icons/profile.svg";
 
 export default function Navbar() {
+  const router = useRouter();
+
   return (
     <Wrapper>
       <NavbarMenu>
-        <NavbarItem $isActive>
-          <Link href="#home">
-            <IconWrapper $isActive>
+        <NavbarItem $isActive={router.pathname === "/"}>
+          <Link href="/">
+            <IconWrapper $isActive={router.pathname === "/"}>
               <HomeIcon width={100} height={100} />
             </IconWrapper>
           </Link>
         </NavbarItem>
 
-        <NavbarItem>
-          <Link href="#transactions">
-            <IconWrapper>
+        <NavbarItem $isActive={router.pathname === "/transactions"}>
+          <Link href="/transactions">
+            <IconWrapper $isActive={router.pathname === "/transactions"}>
               <TransactionsIcon width={100} height={100} />
             </IconWrapper>
           </Link>
         </NavbarItem>
 
-        <NavbarItem>
-          <Link href="#add">
-            <IconWrapper>
+        <NavbarItem $isActive={router.pathname === "/add"}>
+          <Link href="/add">
+            <IconWrapper $isActive={router.pathname === "/add"}>
               <AddIcon width={100} height={100} />
             </IconWrapper>
           </Link>
         </NavbarItem>
 
-        <NavbarItem>
-          <Link href="#categories">
-            <IconWrapper>
+        <NavbarItem $isActive={router.pathname === "/categories"}>
+          <Link href="/categories">
+            <IconWrapper $isActive={router.pathname === "/categories"}>
               <CategoriesIcon width={100} height={100} />
             </IconWrapper>
           </Link>
         </NavbarItem>
 
-        <NavbarItem>
-          <Link href="#profile">
-            <IconWrapper>
+        <NavbarItem $isActive={router.pathname === "/profile"}>
+          <Link href="/profile">
+            <IconWrapper $isActive={router.pathname === "/profile"}>
               <ProfileIcon width={100} height={100} />
             </IconWrapper>
           </Link>
