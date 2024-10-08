@@ -11,7 +11,7 @@ export default function Navbar() {
   return (
     <Wrapper>
       <NavbarMenu>
-        <NavbarItem $expanded $isActive>
+        <NavbarItem $isActive>
           <Link href="#home">
             <IconWrapper $isActive>
               <HomeIcon width={100} height={100} />
@@ -19,7 +19,7 @@ export default function Navbar() {
           </Link>
         </NavbarItem>
 
-        <NavbarItem $expanded>
+        <NavbarItem>
           <Link href="#transactions">
             <IconWrapper>
               <TransactionsIcon width={100} height={100} />
@@ -27,7 +27,7 @@ export default function Navbar() {
           </Link>
         </NavbarItem>
 
-        <NavbarItem $expanded>
+        <NavbarItem>
           <Link href="#add">
             <IconWrapper>
               <AddIcon width={100} height={100} />
@@ -35,7 +35,7 @@ export default function Navbar() {
           </Link>
         </NavbarItem>
 
-        <NavbarItem $expanded>
+        <NavbarItem>
           <Link href="#categories">
             <IconWrapper>
               <CategoriesIcon width={100} height={100} />
@@ -43,7 +43,7 @@ export default function Navbar() {
           </Link>
         </NavbarItem>
 
-        <NavbarItem $expanded>
+        <NavbarItem>
           <Link href="#profile">
             <IconWrapper>
               <ProfileIcon width={100} height={100} />
@@ -83,14 +83,13 @@ const NavbarItem = styled.li`
   padding: 10px;
   transition: transform 0.2s ease-in-out, background-color 0.3s;
 
-  /* Setze die Hintergrundfarbe basierend auf dem aktiven Zustand */
   background-color: ${(props) =>
     props.$isActive
       ? "var(--button-active-color)"
       : "var(--button-background-color)"};
 
   &:hover {
-    transform: scale(1.1); /* Vergrößert den gesamten Navbar-Bereich leicht */
+    transform: scale(1.1);
   }
 `;
 
