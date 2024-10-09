@@ -30,7 +30,7 @@ export default function FormAddTransaction() {
       });
 
       if (response.ok) {
-        console.log("ADDING SUCCESSFULL!");
+        console.log("ADDING SUCCESSFULL! (transaction)");
         router.back(); // nach erfolgreichem Hinzufügen neuer Transaktion zurück zur vorherigen Seite
       } else {
         throw new Error("Failed to add new transaction");
