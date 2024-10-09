@@ -42,7 +42,7 @@ export default function FormAddTransaction() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <h1>Add Transaction</h1>
+      <h2>Add Transaction</h2>
 
       <label htmlFor="type">Type:</label>
       <input type="radio" id="income" name="type" value="Income" />
