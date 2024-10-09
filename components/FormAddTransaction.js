@@ -3,15 +3,17 @@ import { useRouter } from "next/router";
 
 export default function FormAddTransaction() {
   const router = useRouter();
-  const { data: categories, error } = useSWR("/api/categories");
+  const { data: categories, error } = useSWR("/api/categories"); // für Dropdown, damit Kategorien zur Auswahl abgerufen werden
 
   if (error) return <div>Failed to load categories</div>;
   if (!categories) return <div>Loading...</div>;
 
+  // Cancel-Button
   function handleCancel() {
-    router.back(); // zurück zur vorherigen Seite
+    router.back(); // zurück zur vorherigen Seite (nochmal überdenken, ob er nicht lieber Formular clearen soll & zustätzl. X-Button dafür implemetieren)
   }
 
+  // Save-Button
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -28,12 +30,11 @@ export default function FormAddTransaction() {
       });
 
       if (response.ok) {
-        console.log("Added new transaction successfully");
+        console.log("ADDING SUCCESSFULL!");
+        router.back(); // nach erfolgreichem Hinzufügen neuer Transaktion zurück zur vorherigen Seite
       } else {
         throw new Error("Failed to add new transaction");
       }
-
-      router.back(); // nach erfolgreichem Erstellen neuer Transaktion zurück zur vorherigen Seite
     } catch (error) {
       console.error("Error adding new transaction: ", error);
     }
@@ -49,7 +50,6 @@ export default function FormAddTransaction() {
       <input type="radio" id="expense" name="type" value="Expense" />
       <label htmlFor="expense">Expense</label>
       <br />
-
       <label htmlFor="category">Category:</label>
       <select id="category" name="category">
         <option value="">Select</option>
@@ -61,7 +61,6 @@ export default function FormAddTransaction() {
         ))}
       </select>
       <br />
-
       <label htmlFor="description">Description:</label>
       <input
         type="text"
@@ -70,15 +69,12 @@ export default function FormAddTransaction() {
         placeholder="..."
       />
       <br />
-
       <label htmlFor="amount">Amount:</label>
       <input type="number" id="amount" name="amount" placeholder="0,00 €" />
       <br />
-
       <label htmlFor="date">Date:</label>
       <input type="date" id="date" name="date" />
       <br />
-
       <button type="button" onClick={handleCancel}>
         Cancel
       </button>
