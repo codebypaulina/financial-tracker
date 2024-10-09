@@ -8,12 +8,39 @@ export default function FormAddTransaction() {
   if (error) return <div>Failed to load categories</div>;
   if (!categories) return <div>Loading...</div>;
 
-  const handleCancel = () => {
+  function handleCancel() {
     router.back(); // zurück zur vorherigen Seite
-  };
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData);
+
+    try {
+      const response = await fetch("/api/transactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        console.log("Added new transaction successfully");
+      } else {
+        throw new Error("Failed to add new transaction");
+      }
+
+      router.back(); // nach erfolgreichem Erstellen neuer Transaktion zurück zur vorherigen Seite
+    } catch (error) {
+      console.error("Error adding new transaction: ", error);
+    }
+  }
 
   return (
-    <form>
+    <form onSubmit={handleSubmit}>
       <h1>Add Transaction</h1>
 
       <label htmlFor="type">Type:</label>
