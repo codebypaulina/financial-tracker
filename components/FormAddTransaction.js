@@ -1,10 +1,16 @@
 import useSWR from "swr";
+import { useRouter } from "next/router";
 
 export default function FormAddTransaction() {
+  const router = useRouter();
   const { data: categories, error } = useSWR("/api/categories");
 
   if (error) return <div>Failed to load categories</div>;
   if (!categories) return <div>Loading...</div>;
+
+  const handleCancel = () => {
+    router.back(); // zurück zur vorherigen Seite
+  };
 
   return (
     <form>
@@ -46,7 +52,7 @@ export default function FormAddTransaction() {
       <input type="date" id="date" name="date" />
       <br />
 
-      <button type="button" name="cancel">
+      <button type="button" onClick={handleCancel}>
         Cancel
       </button>
       <button type="submit">Save</button>
