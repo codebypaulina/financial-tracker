@@ -22,6 +22,7 @@ export default function TransactionsPage() {
           </li>
         ))}
       </ul>
+
       <Navbar />
     </>
   );
