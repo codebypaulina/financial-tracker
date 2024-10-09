@@ -24,12 +24,18 @@ export default async function handler(request, response) {
           },
         },
       ]);
-
       response.status(200).json(categories);
     } catch (error) {
-      response
-        .status(500)
-        .json({ error: "Failed to fetch categories with total amount" });
+      response.status(500).json({ error: "Failed to fetch categories" });
+    }
+  } else if (request.method === "POST") {
+    try {
+      const newCategory = new Category(request.body); // erstellt neue Kategorie
+      const savedCategory = await newCategory.save(); // speichert neue Kategorie
+
+      response.status(201).json(savedCategory);
+    } catch (error) {
+      response.status(500).json({ error: "Failed to create category" });
     }
   } else {
     response.status(405).json({ message: "Method not allowed" });
