@@ -6,15 +6,47 @@ export default async function handler(request, response) {
 
   if (request.method === "GET") {
     try {
-      const categories = await Category.find(); // holt alle Kategorien aus database
-
-      console.log("fetched categories: ", categories);
+      // Kategorien mit zugehörigen Transaktionen abrufen & totalAmount berechnen
+      const categories = await Category.aggregate([
+        {
+          // lookup-Integration: um Transaktionen in Kategorie zu integrieren
+          $lookup: {
+            from: "transactions", // Collection, die durchsucht wird
+            localField: "_id", // Feld in Category-Collection
+            foreignField: "category", // Feld in Transaction-Collection
+            as: "transactions", // neues Feld, das die integrierten Transaktionen enthält
+          },
+        },
+        {
+          // totalAmount berechnen & neues Feld zur Kategorie hinzufügen
+          $addFields: {
+            totalAmount: { $sum: "$transactions.amount" }, // Summe aller amounts der integrierten Transaktionen
+          },
+        },
+      ]);
 
       response.status(200).json(categories);
     } catch (error) {
-      response.status(500).json({ error: "Failed to fetch categories" });
+      response
+        .status(500)
+        .json({ error: "Failed to fetch categories with total amount" });
     }
   } else {
     response.status(405).json({ message: "Method not allowed" });
   }
 }
+
+/* 
+Anstatt Feld "totalAmount" direkt in der collection zu speichern, besser "totalAmount" dynamisch mit Aggregation in MongoDB berechnen, weil:
+
+1. Dynamische Datenaktualisierung
+   Wenn sich Transaktionen ändern (bearbeitet / gelöscht / neu hinzugefügt), wird totalAmount automatisch aktualisiert.
+   Es muss keine manuelle Aktualisierung des Felds durchgeführt werden.
+   = Code effizienter & weniger fehleranfällig.
+
+2. Vermeidung Dateninkonsistenz
+   Wäre totalAmount als festes Feld in der collection gespeichert, müsste er jedes Mal manuell aktualisiert werden, wenn sich Transaktionen ändern.
+   Ein nicht korrekt aktualisierter Wert kann zu Dateninkonsistenzen führen.
+   Durch Aggregation berechnet MongoDB totalAmount basierend auf aktuellen Daten jedes Mal neu.
+   = Wert immer korrekt.
+*/
