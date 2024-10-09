@@ -1,4 +1,13 @@
+import { useRouter } from "next/router";
+
 export default function FormAddCategory() {
+  const router = useRouter();
+
+  // Cancel-Button
+  function handleCancel() {
+    router.back(); // zurück zur vorherigen Seite (nochmal überdenken, ob er nicht lieber Formular clearen soll & zustätzl. X-Button dafür implemetieren)
+  }
+
   return (
     <form>
       <h2>Add Category</h2>
@@ -18,7 +27,9 @@ export default function FormAddCategory() {
       <input type="color" id="color" name="color" defaultValue="#ffffff" />
       <br />
 
-      <button type="button">Cancel</button>
+      <button type="button" onClick={handleCancel}>
+        Cancel
+      </button>
       <button type="submit">Save</button>
     </form>
   );
