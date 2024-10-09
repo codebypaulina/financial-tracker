@@ -1,6 +1,15 @@
+import useSWR from "swr";
+
 export default function FormAddTransaction() {
+  const { data: categories, error } = useSWR("/api/categories");
+
+  if (error) return <div>Failed to load categories</div>;
+  if (!categories) return <div>Loading...</div>;
+
   return (
     <form>
+      <h1>Add Transaction</h1>
+
       <label htmlFor="type">Type:</label>
       <input type="radio" id="income" name="type" value="Income" />
       <label htmlFor="income">Income</label>
@@ -11,6 +20,12 @@ export default function FormAddTransaction() {
       <label htmlFor="category">Category:</label>
       <select id="category" name="category">
         <option value="">Select</option>
+
+        {categories.map((category) => (
+          <option key={category._id} value={category._id}>
+            {category.name}
+          </option>
+        ))}
       </select>
       <br />
 
