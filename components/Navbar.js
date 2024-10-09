@@ -30,9 +30,9 @@ export default function Navbar() {
           </Link>
         </NavbarItem>
 
-        <NavbarItem $isActive={router.pathname === "/add"}>
-          <Link href="/add">
-            <IconWrapper $isActive={router.pathname === "/add"}>
+        <NavbarItem $isActive={router.pathname === "/adding"}>
+          <Link href="/adding">
+            <IconWrapper $isActive={router.pathname === "/adding"}>
               <AddIcon width={100} height={100} />
             </IconWrapper>
           </Link>
