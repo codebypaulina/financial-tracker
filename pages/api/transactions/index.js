@@ -14,6 +14,15 @@ export default async function handler(request, response) {
     } catch (error) {
       response.status(500).json({ error: "Failed to fetch transactions" });
     }
+  } else if (request.method === "POST") {
+    try {
+      const newTransaction = new Transaction(request.body); // erstellt neue Transaktion
+      const savedTransaction = await newTransaction.save(); // speichert neue Transaktion in database
+
+      response.status(201).json(savedTransaction);
+    } catch (error) {
+      response.status(500).json({ error: "Failed to create transaction" });
+    }
   } else {
     return response.status(405).json({ message: "Method not allowed" });
   }
