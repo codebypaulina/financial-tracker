@@ -18,6 +18,22 @@ export default async function handler(request, response) {
     } catch (error) {
       response.status(500).json({ error: "Failed to fetch transaction" });
     }
+  } else if (request.method === "PUT") {
+    try {
+      const updatedTransaction = await Transaction.findByIdAndUpdate(
+        id,
+        request.body,
+        { new: true } // geupdatete Version der transaction zurück
+      ).populate("category");
+
+      if (!updatedTransaction) {
+        return response.status(404).json({ error: "Transaction not found" });
+      }
+
+      response.status(200).json(updatedTransaction);
+    } catch (error) {
+      response.status(500).json({ error: "Failed to update transaction" });
+    }
   } else {
     return response.status(405).json({ message: "Method not allowed" });
   }
