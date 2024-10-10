@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 
 export default function FormEditCategory() {
   const router = useRouter();
+  const { id } = router.query; // ID der entspr. category aus URL extrahiert
 
   // Cancel-Button
   function handleCancel() {
