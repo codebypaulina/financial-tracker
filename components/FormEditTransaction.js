@@ -48,19 +48,24 @@ export default function FormEditTransaction() {
 
   // Delete-Button
   async function handleDelete() {
-    try {
-      const response = await fetch(`/api/transactions/${id}`, {
-        method: "DELETE",
-      });
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this transaction? This cannot be undone."
+    );
+    if (confirmed) {
+      try {
+        const response = await fetch(`/api/transactions/${id}`, {
+          method: "DELETE",
+        });
 
-      if (response.ok) {
-        console.log("DELETING SUCCESSFUL! (transaction)!");
-        router.back(); // nach Löschen zurück zur vorherigen Seite
-      } else {
-        throw new Error("Failed to delete transaction");
+        if (response.ok) {
+          console.log("DELETING SUCCESSFUL! (transaction)!");
+          router.back(); // nach Löschen zurück zur vorherigen Seite
+        } else {
+          throw new Error("Failed to delete transaction");
+        }
+      } catch (error) {
+        console.error("Error deleting transaction: ", error);
       }
-    } catch (error) {
-      console.error("Error deleting transaction: ", error);
     }
   }
 
