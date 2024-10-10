@@ -1,10 +1,17 @@
 import useSWR from "swr";
+import { useRouter } from "next/router";
 
 export default function FormEditTransaction() {
+  const router = useRouter();
   const { data: categories, error } = useSWR("/api/categories"); // für Dropdown, damit Kategorien zur Auswahl abgerufen werden
 
   if (error) return <div>Failed to load categories</div>;
   if (!categories) return <div>Loading...</div>;
+
+  // Cancel-Button
+  function handleCancel() {
+    router.back(); // zurück zur vorherigen Seite (nochmal überdenken, ob er nicht lieber Formular clearen soll & zustätzl. X-Button dafür implemetieren)
+  }
 
   return (
     <form>
@@ -47,7 +54,9 @@ export default function FormEditTransaction() {
       <br />
 
       <button type="button">Delete</button>
-      <button type="button">Cancel</button>
+      <button type="button" onClick={handleCancel}>
+        Cancel
+      </button>
       <button type="submit">Save</button>
     </form>
   );
