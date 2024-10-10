@@ -46,6 +46,24 @@ export default function FormEditTransaction() {
     }
   }
 
+  // Delete-Button
+  async function handleDelete() {
+    try {
+      const response = await fetch(`/api/transactions/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        console.log("DELETING SUCCESSFUL! (transaction)!");
+        router.back(); // nach Löschen zurück zur vorherigen Seite
+      } else {
+        throw new Error("Failed to delete transaction");
+      }
+    } catch (error) {
+      console.error("Error deleting transaction: ", error);
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       <h2>Edit Transaction</h2>
@@ -110,7 +128,9 @@ export default function FormEditTransaction() {
       />
       <br />
 
-      <button type="button">Delete</button>
+      <button type="button" onClick={handleDelete}>
+        Delete
+      </button>
       <button type="button" onClick={handleCancel}>
         Cancel
       </button>
