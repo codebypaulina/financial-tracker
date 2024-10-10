@@ -26,16 +26,30 @@ export default function FormEditTransaction() {
       <h2>Edit Transaction</h2>
 
       <label htmlFor="type">Type:</label>
-      <input type="radio" id="income" name="type" value="Income" />
+      <input
+        type="radio"
+        id="income"
+        name="type"
+        value="Income"
+        defaultChecked={transaction.type === "Income"}
+      />
       <label htmlFor="income">Income</label>
-      <input type="radio" id="expense" name="type" value="Expense" />
+      <input
+        type="radio"
+        id="expense"
+        name="type"
+        value="Expense"
+        defaultChecked={transaction.type === "Expense"}
+      />
       <label htmlFor="expense">Expense</label>
       <br />
 
       <label htmlFor="category">Category:</label>
-      <select id="category" name="category">
-        <option value="">Select</option>
-
+      <select
+        id="category"
+        name="category"
+        defaultValue={transaction.category._id}
+      >
         {categories.map((category) => (
           <option key={category._id} value={category._id}>
             {category.name}
@@ -49,12 +63,17 @@ export default function FormEditTransaction() {
         type="text"
         id="description"
         name="description"
-        placeholder="..."
+        defaultValue={transaction.description}
       />
       <br />
 
       <label htmlFor="amount">Amount:</label>
-      <input type="number" id="amount" name="amount" placeholder="0,00 €" />
+      <input
+        type="number"
+        id="amount"
+        name="amount"
+        defaultValue={transaction.amount}
+      />
       <br />
 
       <label htmlFor="date">Date:</label>
