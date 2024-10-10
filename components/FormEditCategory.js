@@ -8,7 +8,7 @@ export default function FormEditCategory() {
     router.back(); // zurück zur vorherigen Seite (nochmal überdenken, ob er nicht lieber Formular clearen soll & zustätzl. X-Button dafür implemetieren)
   }
 
-  // Save
+  // Save-Button
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -35,6 +35,29 @@ export default function FormEditCategory() {
     }
   }
 
+  // Delete-Button
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this category? This cannot be undone."
+    );
+    if (confirmed) {
+      try {
+        const response = await fetch(`/api/categories/${id}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          console.log("DELETING SUCCESSFUL! (category)");
+          router.back(); // nach Löschen zurück zur vorherigen Seite
+        } else {
+          throw new Error("Failed to delete category");
+        }
+      } catch (error) {
+        console.error("Error deleting category: ", error);
+      }
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       <h2>Edit Category</h2>
@@ -54,7 +77,9 @@ export default function FormEditCategory() {
       <input type="color" id="color" name="color" />
       <br />
 
-      <button type="button">Delete</button>
+      <button type="button" onClick={handleDelete}>
+        Delete
+      </button>
       <button type="button" onClick={handleCancel}>
         Cancel
       </button>
