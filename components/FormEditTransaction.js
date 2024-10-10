@@ -3,15 +3,23 @@ import { useRouter } from "next/router";
 
 export default function FormEditTransaction() {
   const router = useRouter();
-  const { data: categories, error } = useSWR("/api/categories"); // für Dropdown, damit Kategorien zur Auswahl abgerufen werden
+  const { id } = router.query; // ID der entspr. transaction aus URL extrahiert
 
-  if (error) return <div>Failed to load categories</div>;
-  if (!categories) return <div>Loading...</div>;
+  const { data: transaction, error: errorTransaction } = useSWR(
+    id ? `/api/transactions/${id}` : null
+  ); // transaction abrufen
+  const { data: categories, error: errorCategories } =
+    useSWR("/api/categories"); // für Dropdown, damit Kategorien zur Auswahl abgerufen werden
+
+  if (errorTransaction || errorCategories) return <h3>Failed to load data</h3>;
+  if (!transaction || !categories) return <h3>Loading...</h3>;
 
   // Cancel-Button
   function handleCancel() {
     router.back(); // zurück zur vorherigen Seite (nochmal überdenken, ob er nicht lieber Formular clearen soll & zustätzl. X-Button dafür implemetieren)
   }
+
+  console.log("TRANSACTION: ", transaction);
 
   return (
     <form>
