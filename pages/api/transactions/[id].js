@@ -34,6 +34,18 @@ export default async function handler(request, response) {
     } catch (error) {
       response.status(500).json({ error: "Failed to update transaction" });
     }
+  } else if (request.method === "DELETE") {
+    try {
+      const deletedTransaction = await Transaction.findByIdAndDelete(id);
+
+      if (!deletedTransaction) {
+        return response.status(404).json({ error: "Transaction not found" });
+      }
+
+      response.status(204).end();
+    } catch (error) {
+      response.status(500).json({ error: "Failed to delete transaction" });
+    }
   } else {
     return response.status(405).json({ message: "Method not allowed" });
   }
