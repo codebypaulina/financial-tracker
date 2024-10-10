@@ -1,5 +1,7 @@
 import Navbar from "@/components/Navbar";
 import useSWR from "swr";
+import Link from "next/link";
+import styled from "styled-components";
 
 export default function TransactionsPage() {
   const { data: transactions, error } = useSWR("/api/transactions");
@@ -14,11 +16,15 @@ export default function TransactionsPage() {
       <ul>
         {transactions.map((transaction) => (
           <li key={transaction._id}>
-            <strong>{transaction.type}</strong> | {transaction.amount} € |{" "}
-            {transaction.description} |{" "}
-            <span>
-              {transaction.category ? transaction.category.name : "No Category"}
-            </span>
+            <StyledLink href={`/transactions/${transaction._id}`}>
+              <strong>{transaction.type}</strong> | {transaction.amount} € |{" "}
+              {transaction.description} |{" "}
+              <span>
+                {transaction.category
+                  ? transaction.category.name
+                  : "No Category"}
+              </span>
+            </StyledLink>
           </li>
         ))}
       </ul>
@@ -27,3 +33,12 @@ export default function TransactionsPage() {
     </>
   );
 }
+
+const StyledLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    font-weight: bold;
+  }
+`;
