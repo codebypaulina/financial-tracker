@@ -77,7 +77,12 @@ export default function FormEditTransaction() {
       <br />
 
       <label htmlFor="date">Date:</label>
-      <input type="date" id="date" name="date" />
+      <input
+        type="date"
+        id="date"
+        name="date"
+        defaultValue={transaction.date.slice(0, 10)} // nimmt nur erste 10 Zeichen aus Datum-String: YYYY-MM-DD
+      />
       <br />
 
       <button type="button">Delete</button>
