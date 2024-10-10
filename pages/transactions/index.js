@@ -17,6 +17,7 @@ export default function TransactionsPage() {
         {transactions.map((transaction) => (
           <li key={transaction._id}>
             <StyledLink href={`/transactions/${transaction._id}`}>
+              {transaction.date.slice(0, 10)} |{" "}
               <strong>{transaction.type}</strong> | {transaction.amount} € |{" "}
               {transaction.description} |{" "}
               <span>

@@ -19,10 +19,35 @@ export default function FormEditTransaction() {
     router.back(); // zurück zur vorherigen Seite (nochmal überdenken, ob er nicht lieber Formular clearen soll & zustätzl. X-Button dafür implemetieren)
   }
 
-  console.log("TRANSACTION: ", transaction);
+  // Save-Button
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData);
+
+    try {
+      const response = await fetch(`/api/transactions/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        console.log("UPDATING SUCCESSFUL! (transaction)");
+        router.back(); // nach erfolgreichem Updaten der Transaktion zurück zur vorherigen Seite
+      } else {
+        throw new Error("Failed to update transaction");
+      }
+    } catch (error) {
+      console.error("Error updating transaction: ", error);
+    }
+  }
 
   return (
-    <form>
+    <form onSubmit={handleSubmit}>
       <h2>Edit Transaction</h2>
 
       <label htmlFor="type">Type:</label>
