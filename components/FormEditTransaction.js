@@ -1,4 +1,11 @@
+import useSWR from "swr";
+
 export default function FormEditTransaction() {
+  const { data: categories, error } = useSWR("/api/categories"); // für Dropdown, damit Kategorien zur Auswahl abgerufen werden
+
+  if (error) return <div>Failed to load categories</div>;
+  if (!categories) return <div>Loading...</div>;
+
   return (
     <form>
       <h2>Edit Transaction</h2>
@@ -13,6 +20,12 @@ export default function FormEditTransaction() {
       <label htmlFor="category">Category:</label>
       <select id="category" name="category">
         <option value="">Select</option>
+
+        {categories.map((category) => (
+          <option key={category._id} value={category._id}>
+            {category.name}
+          </option>
+        ))}
       </select>
       <br />
 
