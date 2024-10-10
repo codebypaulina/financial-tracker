@@ -1,8 +1,14 @@
+import useSWR from "swr";
 import { useRouter } from "next/router";
 
 export default function FormEditCategory() {
   const router = useRouter();
   const { id } = router.query; // ID der entspr. category aus URL extrahiert
+
+  const { data: category, error } = useSWR(id ? `/api/categories/${id}` : null); // category abrufen
+
+  if (error) return <h3>Failed to load category</h3>;
+  if (!category) return <h3>Loading...</h3>;
 
   // Cancel-Button
   function handleCancel() {
@@ -64,18 +70,35 @@ export default function FormEditCategory() {
       <h2>Edit Category</h2>
 
       <label htmlFor="type">Type:</label>
-      <input type="radio" id="income" name="type" value="Income" />
+      <input
+        type="radio"
+        id="income"
+        name="type"
+        value="Income"
+        defaultChecked={category.type === "Income"}
+      />
       <label htmlFor="income">Income</label>
-      <input type="radio" id="expense" name="type" value="Expense" />
+      <input
+        type="radio"
+        id="expense"
+        name="type"
+        value="Expense"
+        defaultChecked={category.type === "Expense"}
+      />
       <label htmlFor="expense">Expense</label>
       <br />
 
       <label htmlFor="name">Name:</label>
-      <input type="text" id="name" name="name" />
+      <input type="text" id="name" name="name" defaultValue={category.name} />
       <br />
 
       <label htmlFor="color">Color:</label>
-      <input type="color" id="color" name="color" />
+      <input
+        type="color"
+        id="color"
+        name="color"
+        defaultValue={category.color}
+      />
       <br />
 
       <button type="button" onClick={handleDelete}>
