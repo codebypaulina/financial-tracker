@@ -34,6 +34,18 @@ export default async function handler(request, response) {
     } catch (error) {
       response.status(500).json({ error: "Failed to update category" });
     }
+  } else if (request.method === "DELETE") {
+    try {
+      const deletedCategory = await Category.findByIdAndDelete(id);
+
+      if (!deletedCategory) {
+        return response.status(404).json({ error: "Category not found" });
+      }
+
+      response.status(204).end();
+    } catch (error) {
+      response.status(500).json({ error: "Failed to delete category" });
+    }
   } else {
     return response.status(405).json({ message: "Method not allowed" });
   }
