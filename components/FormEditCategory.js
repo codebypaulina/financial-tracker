@@ -1,4 +1,13 @@
+import { useRouter } from "next/router";
+
 export default function FormEditCategory() {
+  const router = useRouter();
+
+  // Cancel-Button
+  function handleCancel() {
+    router.back(); // zurück zur vorherigen Seite (nochmal überdenken, ob er nicht lieber Formular clearen soll & zustätzl. X-Button dafür implemetieren)
+  }
+
   return (
     <form>
       <h2>Edit Category</h2>
@@ -19,7 +28,9 @@ export default function FormEditCategory() {
       <br />
 
       <button type="button">Delete</button>
-      <button type="button">Cancel</button>
+      <button type="button" onClick={handleCancel}>
+        Cancel
+      </button>
       <button type="submit">Save</button>
     </form>
   );
