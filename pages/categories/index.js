@@ -1,5 +1,7 @@
 import Navbar from "@/components/Navbar";
 import useSWR from "swr";
+import Link from "next/link";
+import styled from "styled-components";
 
 export default function CategoriesPage() {
   const { data: categories, error } = useSWR("/api/categories");
@@ -14,8 +16,10 @@ export default function CategoriesPage() {
       <ul>
         {categories.map((category) => (
           <li key={category._id}>
-            <strong>{category.name}</strong> | {category.type} |{" "}
-            <span>{category.totalAmount || 0} €</span>
+            <StyledLink href={`/categories/${category._id}`}>
+              <strong>{category.name}</strong> | {category.type} |{" "}
+              <span>{category.totalAmount || 0} €</span>
+            </StyledLink>
           </li>
         ))}
       </ul>
@@ -24,3 +28,12 @@ export default function CategoriesPage() {
     </>
   );
 }
+
+const StyledLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    font-weight: bold;
+  }
+`;
