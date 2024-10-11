@@ -24,8 +24,17 @@ export default function HomePage() {
     (category) => category.type === "Expense"
   );
 
-  // sortiert Liste absteigend nach totalAmount
-  expenseCategories.sort((a, b) => b.totalAmount - a.totalAmount);
+  // erst nach visibility & dann nach totalAmount (absteigend) sortieren
+  expenseCategories.sort((a, b) => {
+    const isHiddenA = hiddenCategories.includes(a._id);
+    const isHiddenB = hiddenCategories.includes(b._id);
+
+    // wenn beide gleiche visibility haben, nach totalAmount
+    if (isHiddenA === isHiddenB) return b.totalAmount - a.totalAmount;
+
+    // hiddenCategories nach unten
+    return isHiddenA - isHiddenB;
+  });
 
   // chart
   const chartData = expenseCategories
@@ -44,7 +53,6 @@ export default function HomePage() {
         ? prevHiddenCategories.filter((id) => id !== categoryId) // wenn ID schon in hiddenCategories enthalten, dann entfernen (= neues Array ohne diese ID)
         : [...prevHiddenCategories, categoryId]; // wenn ID noch nicht in hiddenCategories enthalten, dann hinzufügen (= neues Array mit bestehender Liste + dieser ID)
 
-      console.log("UPDATED HIDDEN CATS: ", updatedCategories);
       return updatedCategories;
     });
   }
