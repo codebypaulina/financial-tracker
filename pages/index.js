@@ -39,7 +39,22 @@ export default function HomePage() {
       <h1>Expenses</h1>
 
       <ChartSection>
-        <ResponsivePie data={chartData} />
+        <ResponsivePie
+          data={chartData}
+          colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben fpr Segmente
+          innerRadius={0.5} // 50 % ausgeschnitten
+          padAngle={5} // Abstand zw. Segmenten
+          cornerRadius={3} // rundere Ecken von Segmenten
+          arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
+          // isInteractive={false} // alle Interaktionen weg
+          animate={false} // Segmente springen nicht
+          enableArcLabels={false} // keine Zahlen im Segment
+          tooltip={({ datum }) => (
+            <div>
+              <strong>{datum.label}</strong>: {datum.value}
+            </div>
+          )} // zeigt Name & Summe von Kategorie beim Hovern über Segment (auf Touch-Geräten beim Klicken)
+        />
       </ChartSection>
 
       <ul>
@@ -47,7 +62,7 @@ export default function HomePage() {
           <li key={category._id}>
             <StyledLink href={`/categories/${category._id}`}>
               {category.name} | {category.totalAmount} €
-            </StyledLink>
+            </StyledLink>{" "}
             <EyeIcon width={17} height={17} />
           </li>
         ))}
