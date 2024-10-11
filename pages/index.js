@@ -5,6 +5,7 @@ import EyeIcon from "../public/icons/eye.svg";
 import Link from "next/link";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
+import { useState } from "react";
 
 // hier muss dynamischer Import, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -13,8 +14,9 @@ const ResponsivePie = dynamic(
 );
 
 export default function HomePage() {
-  const { data: categories, error } = useSWR("/api/categories");
+  const [hiddenCategories, setHiddenCategories] = useState([]);
 
+  const { data: categories, error } = useSWR("/api/categories");
   if (error) return <h3>Failed to load categories</h3>;
   if (!categories) return <h3>Loading...</h3>;
 
