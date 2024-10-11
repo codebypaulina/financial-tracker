@@ -2,6 +2,8 @@
 import Navbar from "@/components/Navbar";
 import useSWR from "swr";
 import EyeIcon from "../public/icons/eye.svg";
+import Link from "next/link";
+import styled from "styled-components";
 
 export default function HomePage() {
   const { data: transactions, error } = useSWR("/api/transactions");
@@ -21,9 +23,10 @@ export default function HomePage() {
       <ul>
         {expenses.map((expense) => (
           <li key={expense._id}>
-            {expense.date.slice(0, 10)} |{" "}
-            {expense.category ? expense.category.name : "No Category"} |{" "}
-            {expense.amount} €
+            <StyledLink href={`/categories/${expense.category?._id}`}>
+              {expense.category ? expense.category.name : "No Category"} |{" "}
+              {expense.amount} €
+            </StyledLink>{" "}
             <EyeIcon width={17} height={17} />
           </li>
         ))}
@@ -33,3 +36,12 @@ export default function HomePage() {
     </>
   );
 }
+
+const StyledLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    font-weight: bold;
+  }
+`;
