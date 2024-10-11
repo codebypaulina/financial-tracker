@@ -1,6 +1,7 @@
 // import LoginSection from "@/components/LoginSection";
 import Navbar from "@/components/Navbar";
 import useSWR from "swr";
+import EyeIcon from "../public/icons/eye.svg";
 
 export default function HomePage() {
   const { data: transactions, error } = useSWR("/api/transactions");
@@ -23,6 +24,7 @@ export default function HomePage() {
             {expense.date.slice(0, 10)} |{" "}
             {expense.category ? expense.category.name : "No Category"} |{" "}
             {expense.amount} €
+            <EyeIcon width={17} height={17} />
           </li>
         ))}
       </ul>
