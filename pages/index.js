@@ -6,10 +6,12 @@ import Link from "next/link";
 import styled from "styled-components";
 
 export default function HomePage() {
-  const { data: transactions, error } = useSWR("/api/transactions");
+  const { data: transactions, transactionsError } = useSWR("/api/transactions");
+  const { data: categories, error: categoriesError } =
+    useSWR("/api/categories");
 
-  if (error) return <h3>Failed to load transactions</h3>;
-  if (!transactions) return <h3>Loading...</h3>;
+  if (transactionsError || categoriesError) return <h3>Failed to load data</h3>;
+  if (!transactions || !categories) return <h3>Loading...</h3>;
 
   const expenses = transactions.filter(
     (transaction) => transaction.type === "Expense"
