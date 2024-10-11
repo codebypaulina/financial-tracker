@@ -37,6 +37,18 @@ export default function HomePage() {
       color: category.color,
     }));
 
+  // EyeIcon
+  function toggleVisibility(categoryId) {
+    setHiddenCategories((prevHiddenCategories) => {
+      const updatedCategories = prevHiddenCategories.includes(categoryId)
+        ? prevHiddenCategories.filter((id) => id !== categoryId) // wenn ID schon in hiddenCategories enthalten, dann entfernen (= neues Array ohne diese ID)
+        : [...prevHiddenCategories, categoryId]; // wenn ID noch nicht in hiddenCategories enthalten, dann hinzufügen (= neues Array mit bestehender Liste + dieser ID)
+
+      console.log("UPDATED HIDDEN CATS: ", updatedCategories);
+      return updatedCategories;
+    });
+  }
+
   return (
     <>
       {/* <LoginSection /> */}
@@ -67,7 +79,11 @@ export default function HomePage() {
             <StyledLink href={`/categories/${category._id}`}>
               {category.name} | {category.totalAmount} €
             </StyledLink>{" "}
-            <EyeIcon width={17} height={17} />
+            <EyeIcon
+              width={17}
+              height={17}
+              onClick={() => toggleVisibility(category._id)}
+            />
           </li>
         ))}
       </ul>
