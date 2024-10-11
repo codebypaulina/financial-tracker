@@ -77,7 +77,7 @@ export default function HomePage() {
         {expenseCategories.map((category) => (
           <StyledListItem
             key={category._id}
-            isHidden={hiddenCategories.includes(category._id)}
+            $isHidden={hiddenCategories.includes(category._id)}
           >
             <StyledLink href={`/categories/${category._id}`}>
               {category.name} | {category.totalAmount} €
@@ -102,7 +102,7 @@ const ChartSection = styled.div`
 `;
 
 const StyledListItem = styled.li`
-  color: ${(props) => (props.isHidden ? "#ccc" : "inherit")};
+  color: ${(props) => (props.$isHidden ? "#ccc" : "inherit")};
 `;
 
 const StyledLink = styled(Link)`
