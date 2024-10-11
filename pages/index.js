@@ -14,21 +14,28 @@ const ResponsivePie = dynamic(
 );
 
 export default function HomePage() {
-  const [hiddenCategories, setHiddenCategories] = useState([]);
-
-  useEffect(() => {
-    const storedHiddenCategories = localStorage.getItem("hiddenCategories");
-    console.log("GESPEICHERTE HIDDEN CATS: ", hiddenCategories);
-    if (storedHiddenCategories) {
-      setHiddenCategories(JSON.parse(storedHiddenCategories));
+  // Initialwert von Zustand von hiddenCategories = aus localStorage
+  // -> NUR, wenn Code im Browser ausgeführt wird, sonst Server Error (localStorage serverseitig nicht verfügbar)
+  const [hiddenCategories, setHiddenCategories] = useState(() => {
+    if (typeof window !== "undefined") {
+      const storedHiddenCategories = localStorage.getItem("hiddenCategories");
+      return storedHiddenCategories ? JSON.parse(storedHiddenCategories) : [];
     }
-  }, []);
+    return [];
+  });
 
   // Zustand von hiddenCategories bei Änderung im localStorage speichern
   useEffect(() => {
-    console.log("HIDDEN CATS GESPEICHERT!", hiddenCategories);
-    localStorage.setItem("hiddenCategories", JSON.stringify(hiddenCategories));
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "hiddenCategories",
+        JSON.stringify(hiddenCategories)
+      );
+      console.log("HIDDEN CATS GESPEICHERT!", hiddenCategories);
+    }
   }, [hiddenCategories]);
+
+  console.log("AKTUELLER HIDDEN CATS STATE: ", hiddenCategories);
 
   const { data: categories, error } = useSWR("/api/categories");
   if (error) return <h3>Failed to load categories</h3>;
