@@ -1,4 +1,4 @@
-import LoginSection from "@/components/LoginSection";
+// import LoginSection from "@/components/LoginSection";
 import Navbar from "@/components/Navbar";
 import useSWR from "swr";
 
@@ -8,17 +8,21 @@ export default function HomePage() {
   if (error) return <h3>Failed to load transactions</h3>;
   if (!transactions) return <h3>Loading...</h3>;
 
+  const expenses = transactions.filter(
+    (transaction) => transaction.type === "Expense"
+  );
+
   return (
     <>
       {/* <LoginSection /> */}
       <h1>Expenses</h1>
 
       <ul>
-        {transactions.map((transaction) => (
-          <li key={transaction._id}>
-            {transaction.date.slice(0, 10)} |{" "}
-            {transaction.category ? transaction.category.name : "No Category"} |{" "}
-            {transaction.amount} €
+        {expenses.map((expense) => (
+          <li key={expense._id}>
+            {expense.date.slice(0, 10)} |{" "}
+            {expense.category ? expense.category.name : "No Category"} |{" "}
+            {expense.amount} €
           </li>
         ))}
       </ul>
