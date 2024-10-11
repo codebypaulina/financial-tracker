@@ -16,8 +16,17 @@ const ResponsivePie = dynamic(
 export default function HomePage() {
   const [hiddenCategories, setHiddenCategories] = useState([]);
 
+  useEffect(() => {
+    const storedHiddenCategories = localStorage.getItem("hiddenCategories");
+    console.log("GESPEICHERTE HIDDEN CATS: ", hiddenCategories);
+    if (storedHiddenCategories) {
+      setHiddenCategories(JSON.parse(storedHiddenCategories));
+    }
+  }, []);
+
   // Zustand von hiddenCategories bei Änderung im localStorage speichern
   useEffect(() => {
+    console.log("HIDDEN CATS GESPEICHERT!", hiddenCategories);
     localStorage.setItem("hiddenCategories", JSON.stringify(hiddenCategories));
   }, [hiddenCategories]);
 
