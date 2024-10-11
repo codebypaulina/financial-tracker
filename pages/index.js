@@ -26,12 +26,14 @@ export default function HomePage() {
   expenseCategories.sort((a, b) => b.totalAmount - a.totalAmount);
 
   // chart
-  const chartData = expenseCategories.map((category) => ({
-    id: category.id,
-    label: category.name,
-    value: category.totalAmount,
-    color: category.color,
-  }));
+  const chartData = expenseCategories
+    .filter((category) => category.totalAmount > 0)
+    .map((category) => ({
+      id: category.id,
+      label: category.name,
+      value: category.totalAmount,
+      color: category.color,
+    }));
 
   return (
     <>
@@ -43,7 +45,7 @@ export default function HomePage() {
           data={chartData}
           colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben fpr Segmente
           innerRadius={0.5} // 50 % ausgeschnitten
-          padAngle={5} // Abstand zw. Segmenten
+          padAngle={2} // Abstand zw. Segmenten
           cornerRadius={3} // rundere Ecken von Segmenten
           arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
           // isInteractive={false} // alle Interaktionen weg
