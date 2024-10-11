@@ -15,6 +15,9 @@ export default function HomePage() {
     (category) => category.type === "Expense"
   );
 
+  // sortiert Liste absteigend nach totalAmount
+  expenseCategories.sort((a, b) => b.totalAmount - a.totalAmount);
+
   return (
     <>
       {/* <LoginSection /> */}
