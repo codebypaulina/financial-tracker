@@ -4,7 +4,12 @@ import useSWR from "swr";
 import EyeIcon from "../public/icons/eye.svg";
 import Link from "next/link";
 import styled from "styled-components";
-import { ResponsivePie } from "@nivo/pie";
+import dynamic from "next/dynamic";
+
+const ResponsivePie = dynamic(
+  () => import("@nivo/pie").then((mod) => mod.ResponsivePie),
+  { ssr: false }
+);
 
 export default function HomePage() {
   const { data: categories, error } = useSWR("/api/categories");
