@@ -9,12 +9,21 @@ export default function HomePage() {
   if (!transactions) return <h3>Loading...</h3>;
 
   return (
-    <div>
-      <h1>Finance Tracker</h1>
+    <>
+      {/* <LoginSection /> */}
+      <h1>Expenses</h1>
 
-      <LoginSection />
+      <ul>
+        {transactions.map((transaction) => (
+          <li key={transaction._id}>
+            {transaction.date.slice(0, 10)} |{" "}
+            {transaction.category ? transaction.category.name : "No Category"} |{" "}
+            {transaction.amount} €
+          </li>
+        ))}
+      </ul>
 
       <Navbar />
-    </div>
+    </>
   );
 }
