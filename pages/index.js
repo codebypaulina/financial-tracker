@@ -75,7 +75,10 @@ export default function HomePage() {
 
       <ul>
         {expenseCategories.map((category) => (
-          <li key={category._id}>
+          <StyledListItem
+            key={category._id}
+            isHidden={hiddenCategories.includes(category._id)}
+          >
             <StyledLink href={`/categories/${category._id}`}>
               {category.name} | {category.totalAmount} €
             </StyledLink>{" "}
@@ -84,7 +87,7 @@ export default function HomePage() {
               height={17}
               onClick={() => toggleVisibility(category._id)}
             />
-          </li>
+          </StyledListItem>
         ))}
       </ul>
 
@@ -93,6 +96,15 @@ export default function HomePage() {
   );
 }
 
+const ChartSection = styled.div`
+  height: 200px;
+  width: 200px;
+`;
+
+const StyledListItem = styled.li`
+  color: ${(props) => (props.isHidden ? "#ccc" : "inherit")};
+`;
+
 const StyledLink = styled(Link)`
   text-decoration: none;
   color: inherit;
@@ -100,9 +112,4 @@ const StyledLink = styled(Link)`
   &:hover {
     font-weight: bold;
   }
-`;
-
-const ChartSection = styled.div`
-  height: 200px;
-  width: 200px;
 `;
