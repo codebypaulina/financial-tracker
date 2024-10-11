@@ -1,7 +1,6 @@
 import Navbar from "@/components/Navbar";
 import FormAddTransaction from "@/components/FormAddTransaction";
 import FormAddCategory from "@/components/FormAddCategory";
-import FormEditTransaction from "@/components/FormEditTransaction";
 
 export default function AddingPage() {
   return (
@@ -10,8 +9,6 @@ export default function AddingPage() {
 
       <FormAddTransaction />
       <FormAddCategory />
-
-      <FormEditTransaction />
 
       <Navbar />
     </>
