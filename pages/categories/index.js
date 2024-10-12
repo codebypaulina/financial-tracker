@@ -32,19 +32,27 @@ export default function CategoriesPage() {
       id: "Expenses",
       label: "Expenses",
       value: totalExpense,
-      color: "#FF9393",
+      color: "var(--expense-color)",
     },
     {
       id: "Remaining Income",
       label: "Remaining Income",
       value: remainingIncome,
-      color: "#B4E5A2",
+      color: "var(--income-color)",
     },
   ];
 
   return (
     <>
       <h1>Categories</h1>
+      <h2>
+        Total Balance:{" "}
+        {remainingIncome.toLocaleString("de-DE", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}{" "}
+        €
+      </h2>
 
       {chartData.length > 0 && (
         <ChartSection>
@@ -74,7 +82,13 @@ export default function CategoriesPage() {
           <li key={category._id}>
             <StyledLink href={`/categories/${category._id}`}>
               <strong>{category.name}</strong> | {category.type} |{" "}
-              <span>{category.totalAmount || 0} €</span>
+              <span>
+                {category.totalAmount.toLocaleString("de-DE", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                €
+              </span>
             </StyledLink>
           </li>
         ))}
