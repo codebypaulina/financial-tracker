@@ -3,6 +3,8 @@ import { useRouter } from "next/router";
 
 export default function FormAddTransaction() {
   const router = useRouter();
+  const { category: categoryId } = router.query; //
+
   const { data: categories, error } = useSWR("/api/categories"); // für Dropdown, damit Kategorien zur Auswahl abgerufen werden
 
   if (error) return <div>Failed to load categories</div>;
@@ -51,7 +53,7 @@ export default function FormAddTransaction() {
       <label htmlFor="expense">Expense</label>
       <br />
       <label htmlFor="category">Category:</label>
-      <select id="category" name="category">
+      <select id="category" name="category" defaultValue={categoryId || ""}>
         <option value="">Select</option>
 
         {categories.map((category) => (

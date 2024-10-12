@@ -32,6 +32,10 @@ export default function CategoryDetailsPage() {
         ))}
       </ul>
 
+      <button onClick={() => router.push(`/adding?category=${id}`)}>
+        Add Transaction
+      </button>
+
       <button onClick={() => router.push(`/categories/${id}/edit`)}>
         Edit Category
       </button>
