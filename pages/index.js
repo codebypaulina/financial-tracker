@@ -90,24 +90,26 @@ export default function HomePage() {
       <h1>Expenses</h1>
       <h2>Total: {totalVisibleAmount.toFixed(2)} €</h2>
 
-      <ChartSection>
-        <ResponsivePie
-          data={chartData}
-          colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben fpr Segmente
-          innerRadius={0.5} // 50 % ausgeschnitten
-          padAngle={2} // Abstand zw. Segmenten
-          cornerRadius={3} // rundere Ecken von Segmenten
-          arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
-          // isInteractive={false} // alle Interaktionen weg
-          animate={false} // Segmente springen nicht
-          enableArcLabels={false} // keine Zahlen im Segment
-          tooltip={({ datum }) => (
-            <div>
-              <strong>{datum.label}</strong>: {datum.value}
-            </div>
-          )} // zeigt Name & Summe von Kategorie beim Hovern über Segment (auf Touch-Geräten beim Klicken)
-        />
-      </ChartSection>
+      {chartData.length > 0 && (
+        <ChartSection>
+          <ResponsivePie
+            data={chartData}
+            colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben fpr Segmente
+            innerRadius={0.5} // 50 % ausgeschnitten
+            padAngle={2} // Abstand zw. Segmenten
+            cornerRadius={3} // rundere Ecken von Segmenten
+            arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
+            // isInteractive={false} // alle Interaktionen weg
+            animate={false} // Segmente springen nicht
+            enableArcLabels={false} // keine Zahlen im Segment
+            tooltip={({ datum }) => (
+              <div>
+                <strong>{datum.label}</strong>: {datum.value.toFixed(2)} €
+              </div>
+            )} // zeigt Name & Summe von Kategorie beim Hovern über Segment (auf Touch-Geräten beim Klicken)
+          />
+        </ChartSection>
+      )}
 
       <ul>
         {expenseCategories.map((category) => (
@@ -146,7 +148,7 @@ const ChartSection = styled.div`
 `;
 
 const StyledListItem = styled.li`
-  color: ${(props) => (props.$isHidden ? "#ccc" : "inherit")};
+  color: ${(props) => (props.$isHidden ? "#5a5a5a" : "inherit")};
 `;
 
 const StyledLink = styled(Link)`
