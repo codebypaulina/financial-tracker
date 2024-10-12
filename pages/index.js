@@ -88,7 +88,14 @@ export default function HomePage() {
     <>
       {/* <LoginSection /> */}
       <h1>Expenses</h1>
-      <h2>Total: {totalVisibleAmount.toFixed(2)} €</h2>
+      <h2>
+        Total:{" "}
+        {totalVisibleAmount.toLocaleString("de-DE", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}{" "}
+        €
+      </h2>
 
       {chartData.length > 0 && (
         <ChartSection>
@@ -124,7 +131,12 @@ export default function HomePage() {
             $isHidden={hiddenCategories.includes(category._id)}
           >
             <StyledLink href={`/categories/${category._id}`}>
-              {category.name} | {category.totalAmount.toFixed(2)} €
+              {category.name} |{" "}
+              {category.totalAmount.toLocaleString("de-DE", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}{" "}
+              €
             </StyledLink>{" "}
             {hiddenCategories.includes(category._id) ? (
               <EyeSlashIcon
