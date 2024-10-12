@@ -25,24 +25,49 @@ export default function CategoriesPage() {
     .filter((category) => category.type === "Expense")
     .reduce((sum, category) => sum + (category.totalAmount || 0), 0);
 
+  const remainingIncome = totalIncome - totalExpense;
+
   const chartData = [
     {
-      id: "Income",
-      label: "Income",
-      value: totalIncome,
-      color: "#B4E5A2",
-    },
-    {
-      id: "Expense",
-      label: "Expense",
+      id: "Expenses",
+      label: "Expenses",
       value: totalExpense,
       color: "#FF9393",
+    },
+    {
+      id: "Remaining Income",
+      label: "Remaining Income",
+      value: remainingIncome,
+      color: "#B4E5A2",
     },
   ];
 
   return (
     <>
       <h1>Categories</h1>
+
+      {chartData.length > 0 && (
+        <ChartSection>
+          <ResponsivePie
+            data={chartData}
+            colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben für Segmente
+            innerRadius={0.5} // 50 % ausgeschnitten
+            padAngle={2} // Abstand zwischen Segmenten
+            cornerRadius={3} // rundere Ecken der Segmente
+            arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
+            animate={false} // Segmente springen nicht
+            enableArcLabels={false} // keine Zahlen im Segment
+            tooltip={({ datum }) => {
+              const percentage = ((datum.value / totalIncome) * 100).toFixed(0);
+              return (
+                <div>
+                  {datum.label}: <strong>{percentage} %</strong>
+                </div>
+              );
+            }}
+          />
+        </ChartSection>
+      )}
 
       <ul>
         {categories.map((category) => (
@@ -59,6 +84,11 @@ export default function CategoriesPage() {
     </>
   );
 }
+
+const ChartSection = styled.div`
+  height: 200px;
+  width: 200px;
+`;
 
 const StyledLink = styled(Link)`
   text-decoration: none;
