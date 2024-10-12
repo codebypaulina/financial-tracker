@@ -2,9 +2,11 @@
 import Navbar from "@/components/Navbar";
 import useSWR from "swr";
 import EyeIcon from "../public/icons/eye.svg";
+import EyeSlashIcon from "../public/icons/eye-slash.svg";
 import Link from "next/link";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
 
 // hier muss dynamischer Import, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -13,21 +15,52 @@ const ResponsivePie = dynamic(
 );
 
 export default function HomePage() {
-  const { data: categories, error } = useSWR("/api/categories");
+  // Initialwert von Zustand von hiddenCategories = aus localStorage
+  // -> NUR, wenn Code im Browser ausgeführt wird, sonst Server Error (localStorage serverseitig nicht verfügbar)
+  const [hiddenCategories, setHiddenCategories] = useState(() => {
+    if (typeof window !== "undefined") {
+      const storedHiddenCategories = localStorage.getItem("hiddenCategories");
+      return storedHiddenCategories ? JSON.parse(storedHiddenCategories) : [];
+    }
+    return [];
+  });
 
+  // Zustand von hiddenCategories bei Änderung im localStorage speichern
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "hiddenCategories",
+        JSON.stringify(hiddenCategories)
+      );
+    }
+  }, [hiddenCategories]);
+
+  const { data: categories, error } = useSWR("/api/categories");
   if (error) return <h3>Failed to load categories</h3>;
   if (!categories) return <h3>Loading...</h3>;
 
   const expenseCategories = categories.filter(
-    (category) => category.type === "Expense"
+    (category) => category.type === "Expense" && category.totalAmount > 0
   );
 
-  // sortiert Liste absteigend nach totalAmount
-  expenseCategories.sort((a, b) => b.totalAmount - a.totalAmount);
+  // erst nach visibility & dann nach totalAmount (absteigend) sortieren
+  expenseCategories.sort((a, b) => {
+    const isHiddenA = hiddenCategories.includes(a._id);
+    const isHiddenB = hiddenCategories.includes(b._id);
+
+    // wenn beide gleiche visibility haben, nach totalAmount
+    if (isHiddenA === isHiddenB) return b.totalAmount - a.totalAmount;
+
+    // hiddenCategories nach unten
+    return isHiddenA - isHiddenB;
+  });
 
   // chart
   const chartData = expenseCategories
-    .filter((category) => category.totalAmount > 0)
+    .filter(
+      (category) =>
+        category.totalAmount > 0 && !hiddenCategories.includes(category._id)
+    )
     .map((category) => ({
       id: category.id,
       label: category.name,
@@ -35,38 +68,90 @@ export default function HomePage() {
       color: category.color,
     }));
 
+  // Summe aller aktiven Kategorien
+  const totalVisibleAmount = expenseCategories
+    .filter((category) => !hiddenCategories.includes(category._id))
+    .reduce((sum, category) => sum + category.totalAmount, 0);
+
+  // EyeIcon
+  function toggleVisibility(categoryId) {
+    setHiddenCategories((prevHiddenCategories) => {
+      const updatedCategories = prevHiddenCategories.includes(categoryId)
+        ? prevHiddenCategories.filter((id) => id !== categoryId) // wenn ID schon in hiddenCategories enthalten, dann entfernen (= neues Array ohne diese ID)
+        : [...prevHiddenCategories, categoryId]; // wenn ID noch nicht in hiddenCategories enthalten, dann hinzufügen (= neues Array mit bestehender Liste + dieser ID)
+
+      return updatedCategories;
+    });
+  }
+
   return (
     <>
       {/* <LoginSection /> */}
       <h1>Expenses</h1>
+      <h2>
+        Total:{" "}
+        {totalVisibleAmount.toLocaleString("de-DE", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}{" "}
+        €
+      </h2>
 
-      <ChartSection>
-        <ResponsivePie
-          data={chartData}
-          colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben fpr Segmente
-          innerRadius={0.5} // 50 % ausgeschnitten
-          padAngle={2} // Abstand zw. Segmenten
-          cornerRadius={3} // rundere Ecken von Segmenten
-          arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
-          // isInteractive={false} // alle Interaktionen weg
-          animate={false} // Segmente springen nicht
-          enableArcLabels={false} // keine Zahlen im Segment
-          tooltip={({ datum }) => (
-            <div>
-              <strong>{datum.label}</strong>: {datum.value}
-            </div>
-          )} // zeigt Name & Summe von Kategorie beim Hovern über Segment (auf Touch-Geräten beim Klicken)
-        />
-      </ChartSection>
+      {chartData.length > 0 && (
+        <ChartSection>
+          <ResponsivePie
+            data={chartData}
+            colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben für Segmente
+            innerRadius={0.5} // 50 % ausgeschnitten
+            padAngle={2} // Abstand zw. Segmenten
+            cornerRadius={3} // rundere Ecken von Segmenten
+            arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
+            // isInteractive={false} // alle Interaktionen weg
+            animate={false} // Segmente springen nicht
+            enableArcLabels={false} // keine Zahlen im Segment
+            tooltip={({ datum }) => {
+              const percentage = (
+                (datum.value / totalVisibleAmount) *
+                100
+              ).toFixed(0);
+              return (
+                <div>
+                  {datum.label}: <strong>{percentage} %</strong>
+                </div>
+              );
+            }} // zeigt Name & Summe (%) von Kategorie beim Hovern über Segment (auf Touch-Geräten beim Klicken)
+          />
+        </ChartSection>
+      )}
 
       <ul>
         {expenseCategories.map((category) => (
-          <li key={category._id}>
+          <StyledListItem
+            key={category._id}
+            $isHidden={hiddenCategories.includes(category._id)}
+          >
             <StyledLink href={`/categories/${category._id}`}>
-              {category.name} | {category.totalAmount} €
+              {category.name} |{" "}
+              {category.totalAmount.toLocaleString("de-DE", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}{" "}
+              €
             </StyledLink>{" "}
-            <EyeIcon width={17} height={17} />
-          </li>
+            {hiddenCategories.includes(category._id) ? (
+              <EyeSlashIcon
+                width={17}
+                height={17}
+                onClick={() => toggleVisibility(category._id)}
+              />
+            ) : (
+              <EyeIcon
+                width={17}
+                height={17}
+                onClick={() => toggleVisibility(category._id)}
+              />
+            )}
+          </StyledListItem>
         ))}
       </ul>
 
@@ -75,6 +160,15 @@ export default function HomePage() {
   );
 }
 
+const ChartSection = styled.div`
+  height: 200px;
+  width: 200px;
+`;
+
+const StyledListItem = styled.li`
+  color: ${(props) => (props.$isHidden ? "#5a5a5a" : "inherit")};
+`;
+
 const StyledLink = styled(Link)`
   text-decoration: none;
   color: inherit;
@@ -82,9 +176,4 @@ const StyledLink = styled(Link)`
   &:hover {
     font-weight: bold;
   }
-`;
-
-const ChartSection = styled.div`
-  height: 200px;
-  width: 200px;
 `;
