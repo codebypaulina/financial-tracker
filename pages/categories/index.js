@@ -17,12 +17,28 @@ export default function CategoriesPage() {
   if (!categories) return <h3>Loading...</h3>;
 
   // chart
-  const chartData = categories.map((category) => ({
-    id: category._id,
-    label: category.name,
-    value: category.totalAmount,
-    color: category.color,
-  }));
+  const totalIncome = categories
+    .filter((category) => category.type === "Income")
+    .reduce((sum, category) => sum + (category.totalAmount || 0), 0);
+
+  const totalExpense = categories
+    .filter((category) => category.type === "Expense")
+    .reduce((sum, category) => sum + (category.totalAmount || 0), 0);
+
+  const chartData = [
+    {
+      id: "Income",
+      label: "Income",
+      value: totalIncome,
+      color: "#B4E5A2",
+    },
+    {
+      id: "Expense",
+      label: "Expense",
+      value: totalExpense,
+      color: "#FF9393",
+    },
+  ];
 
   return (
     <>
