@@ -1,6 +1,5 @@
 import { useRouter } from "next/router";
 import useSWR from "swr";
-import Navbar from "@/components/Navbar";
 import styled from "styled-components";
 import Link from "next/link";
 
@@ -54,8 +53,6 @@ export default function CategoryDetailsPage() {
       <button onClick={() => router.push(`/categories/${id}/edit`)}>
         Edit Category
       </button>
-
-      <Navbar />
     </>
   );
 }
