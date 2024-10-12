@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import useSWR from "swr";
 import Navbar from "@/components/Navbar";
+import styled from "styled-components";
 
 export default function CategoryDetailsPage() {
   const router = useRouter();
@@ -21,14 +22,21 @@ export default function CategoryDetailsPage() {
 
   return (
     <>
-      <h2>Category Details: {category.name}</h2>
+      <button onClick={() => router.back()}>Back</button>
+
+      <h1>Category Details</h1>
+      <h2>{category.name}</h2>
 
       <ul>
         {filteredTransactions.map((transaction) => (
-          <li key={transaction._id}>
+          <StyledListItem key={transaction._id}>
             {transaction.date.slice(0, 10)} | {transaction.description} |{" "}
-            {transaction.amount} €
-          </li>
+            {transaction.amount.toLocaleString("de-DE", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}{" "}
+            €
+          </StyledListItem>
         ))}
       </ul>
 
@@ -44,3 +52,9 @@ export default function CategoryDetailsPage() {
     </>
   );
 }
+
+const StyledListItem = styled.li`
+  &:hover {
+    font-weight: bold;
+  }
+`;
