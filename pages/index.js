@@ -40,7 +40,7 @@ export default function HomePage() {
   if (!categories) return <h3>Loading...</h3>;
 
   const expenseCategories = categories.filter(
-    (category) => category.type === "Expense"
+    (category) => category.type === "Expense" && category.totalAmount > 0
   );
 
   // erst nach visibility & dann nach totalAmount (absteigend) sortieren
