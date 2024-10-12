@@ -1,6 +1,7 @@
 // import FormEditCategory from "@/components/FormEditCategory";
 import { useRouter } from "next/router";
 import useSWR from "swr";
+import Navbar from "@/components/Navbar";
 
 export default function CategoryDetailsPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function CategoryDetailsPage() {
   if (!category || !transactions) return <h3>Loading...</h3>;
 
   const filteredTransactions = transactions.filter(
-    (transaction) => transaction.category === id
+    (transaction) => transaction.category?._id === id
   );
 
   return (
@@ -33,6 +34,7 @@ export default function CategoryDetailsPage() {
       </ul>
 
       {/* <FormEditCategory categoryId={id} /> */}
+      <Navbar />
     </>
   );
 }
