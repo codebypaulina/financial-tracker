@@ -2,6 +2,7 @@
 import Navbar from "@/components/Navbar";
 import useSWR from "swr";
 import EyeIcon from "../public/icons/eye.svg";
+import EyeSlashIcon from "../public/icons/eye-slash.svg";
 import Link from "next/link";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
@@ -117,11 +118,19 @@ export default function HomePage() {
             <StyledLink href={`/categories/${category._id}`}>
               {category.name} | {category.totalAmount.toFixed(2)} €
             </StyledLink>{" "}
-            <EyeIcon
-              width={17}
-              height={17}
-              onClick={() => toggleVisibility(category._id)}
-            />
+            {hiddenCategories.includes(category._id) ? (
+              <EyeSlashIcon
+                width={17}
+                height={17}
+                onClick={() => toggleVisibility(category._id)}
+              />
+            ) : (
+              <EyeIcon
+                width={17}
+                height={17}
+                onClick={() => toggleVisibility(category._id)}
+              />
+            )}
           </StyledListItem>
         ))}
       </ul>
