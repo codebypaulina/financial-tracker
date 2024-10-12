@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import useSWR from "swr";
 import Navbar from "@/components/Navbar";
 import styled from "styled-components";
+import Link from "next/link";
 
 export default function CategoryDetailsPage() {
   const router = useRouter();
@@ -27,18 +28,24 @@ export default function CategoryDetailsPage() {
       <h1>Category Details</h1>
       <h2>{category.name}</h2>
 
-      <ul>
-        {filteredTransactions.map((transaction) => (
-          <StyledListItem key={transaction._id}>
-            {transaction.date.slice(0, 10)} | {transaction.description} |{" "}
-            {transaction.amount.toLocaleString("de-DE", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{" "}
-            €
-          </StyledListItem>
-        ))}
-      </ul>
+      {filteredTransactions.length === 0 ? (
+        <p>No transactions in this category yet.</p>
+      ) : (
+        <ul>
+          {filteredTransactions.map((transaction) => (
+            <li key={transaction._id}>
+              <StyledLink href={`/transactions/${transaction._id}`}>
+                {transaction.date.slice(0, 10)} | {transaction.description} |{" "}
+                {transaction.amount.toLocaleString("de-DE", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                €
+              </StyledLink>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <button onClick={() => router.push(`/adding?category=${id}`)}>
         Add Transaction
@@ -53,7 +60,10 @@ export default function CategoryDetailsPage() {
   );
 }
 
-const StyledListItem = styled.li`
+const StyledLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+
   &:hover {
     font-weight: bold;
   }
