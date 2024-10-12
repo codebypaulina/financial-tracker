@@ -1,4 +1,3 @@
-// import FormEditCategory from "@/components/FormEditCategory";
 import { useRouter } from "next/router";
 import useSWR from "swr";
 import Navbar from "@/components/Navbar";
@@ -33,7 +32,6 @@ export default function CategoryDetailsPage() {
         ))}
       </ul>
 
-      {/* <FormEditCategory categoryId={id} /> */}
       <Navbar />
     </>
   );
