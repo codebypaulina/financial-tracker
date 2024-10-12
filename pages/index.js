@@ -67,6 +67,11 @@ export default function HomePage() {
       color: category.color,
     }));
 
+  // Summe aller aktiven Kategorien
+  const totalVisibleAmount = expenseCategories
+    .filter((category) => !hiddenCategories.includes(category._id))
+    .reduce((sum, category) => sum + category.totalAmount, 0);
+
   // EyeIcon
   function toggleVisibility(categoryId) {
     setHiddenCategories((prevHiddenCategories) => {
@@ -82,6 +87,7 @@ export default function HomePage() {
     <>
       {/* <LoginSection /> */}
       <h1>Expenses</h1>
+      <h2>Total: {totalVisibleAmount.toFixed(2)} €</h2>
 
       <ChartSection>
         <ResponsivePie
@@ -109,7 +115,7 @@ export default function HomePage() {
             $isHidden={hiddenCategories.includes(category._id)}
           >
             <StyledLink href={`/categories/${category._id}`}>
-              {category.name} | {category.totalAmount} €
+              {category.name} | {category.totalAmount.toFixed(2)} €
             </StyledLink>{" "}
             <EyeIcon
               width={17}
