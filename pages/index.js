@@ -94,7 +94,7 @@ export default function HomePage() {
         <ChartSection>
           <ResponsivePie
             data={chartData}
-            colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben fpr Segmente
+            colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben für Segmente
             innerRadius={0.5} // 50 % ausgeschnitten
             padAngle={2} // Abstand zw. Segmenten
             cornerRadius={3} // rundere Ecken von Segmenten
@@ -102,11 +102,17 @@ export default function HomePage() {
             // isInteractive={false} // alle Interaktionen weg
             animate={false} // Segmente springen nicht
             enableArcLabels={false} // keine Zahlen im Segment
-            tooltip={({ datum }) => (
-              <div>
-                <strong>{datum.label}</strong>: {datum.value.toFixed(2)} €
-              </div>
-            )} // zeigt Name & Summe von Kategorie beim Hovern über Segment (auf Touch-Geräten beim Klicken)
+            tooltip={({ datum }) => {
+              const percentage = (
+                (datum.value / totalVisibleAmount) *
+                100
+              ).toFixed(0);
+              return (
+                <div>
+                  {datum.label}: <strong>{percentage} %</strong>
+                </div>
+              );
+            }} // zeigt Name & Summe (%) von Kategorie beim Hovern über Segment (auf Touch-Geräten beim Klicken)
           />
         </ChartSection>
       )}
