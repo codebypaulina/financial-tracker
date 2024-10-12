@@ -31,11 +31,8 @@ export default function HomePage() {
         "hiddenCategories",
         JSON.stringify(hiddenCategories)
       );
-      console.log("HIDDEN CATS GESPEICHERT!", hiddenCategories);
     }
   }, [hiddenCategories]);
-
-  console.log("AKTUELLER HIDDEN CATS STATE: ", hiddenCategories);
 
   const { data: categories, error } = useSWR("/api/categories");
   if (error) return <h3>Failed to load categories</h3>;
@@ -59,7 +56,10 @@ export default function HomePage() {
 
   // chart
   const chartData = expenseCategories
-    .filter((category) => category.totalAmount > 0)
+    .filter(
+      (category) =>
+        category.totalAmount > 0 && !hiddenCategories.includes(category._id)
+    )
     .map((category) => ({
       id: category.id,
       label: category.name,
