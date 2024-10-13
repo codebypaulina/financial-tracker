@@ -137,7 +137,17 @@ export default function TransactionsPage() {
           <li key={transaction._id}>
             <StyledLink href={`/transactions/${transaction._id}`}>
               <p>{transaction.date.slice(0, 10)}</p>
-              <ColorTag type={transaction.type} />
+              <ColorTag
+                color={
+                  filterState
+                    ? transaction.category
+                      ? transaction.category.color // prüft, ob Kategorie existiert (Fehlervermeidug!)
+                      : "var(--default-color)" // Fallback-Farbe, wenn keine
+                    : transaction.type === "Income"
+                    ? "var(--income-color)"
+                    : "var(--expense-color)"
+                }
+              />
               <p>{transaction.description}</p>
               <p>
                 {transaction.category
@@ -263,6 +273,5 @@ const ColorTag = styled.span`
   justify-self: center;
   margin-right: 7px;
 
-  background-color: ${(props) =>
-    props.type === "Income" ? "var(--income-color)" : "var(--expense-color)"};
+  background-color: ${(props) => props.color};
 `;
