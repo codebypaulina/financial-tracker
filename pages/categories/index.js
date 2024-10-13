@@ -21,28 +21,41 @@ export default function CategoriesPage() {
   // chart
   const totalIncome = categories
     .filter((category) => category.type === "Income")
-    .reduce((sum, category) => sum + (category.totalAmount || 0), 0);
+    .reduce((sum, category) => sum + category.totalAmount, 0);
 
   const totalExpense = categories
     .filter((category) => category.type === "Expense")
-    .reduce((sum, category) => sum + (category.totalAmount || 0), 0);
+    .reduce((sum, category) => sum + category.totalAmount, 0);
 
   const remainingIncome = totalIncome - totalExpense;
 
-  const chartData = [
-    {
-      id: "Expenses",
-      label: "Expenses",
-      value: totalExpense,
-      color: "var(--expense-color)",
-    },
-    {
-      id: "Remaining Income",
-      label: "Remaining Income",
-      value: remainingIncome,
-      color: "var(--income-color)",
-    },
-  ];
+  // chartData basierend auf filterState
+  const filteredChartData = filterState
+    ? categories
+        .filter(
+          (category) =>
+            category.totalAmount > 0 && category.type === filterState
+        )
+        .map((category) => ({
+          id: category.id,
+          label: category.name,
+          value: category.totalAmount,
+          color: category.color,
+        }))
+    : [
+        {
+          id: "Expenses",
+          label: "Expenses",
+          value: totalExpense,
+          color: "var(--expense-color)",
+        },
+        {
+          id: "Remaining Income",
+          label: "Remaining Income",
+          value: remainingIncome,
+          color: "var(--income-color)",
+        },
+      ];
 
   // categories gefiltert nach type im filterState
   const filteredCategories = filterState
@@ -67,10 +80,10 @@ export default function CategoriesPage() {
         €
       </h2>
 
-      {chartData.length > 0 && (
+      {filteredChartData.length > 0 && (
         <ChartSection>
           <ResponsivePie
-            data={chartData}
+            data={filteredChartData}
             colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben für Segmente
             innerRadius={0.5} // 50 % ausgeschnitten
             padAngle={2} // Abstand zwischen Segmenten
