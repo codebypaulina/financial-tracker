@@ -133,37 +133,39 @@ export default function TransactionsPage() {
       </ButtonContainer>
 
       <StyledList>
-        {filteredTransactions.map((transaction) => (
-          <li key={transaction._id}>
-            <StyledLink href={`/transactions/${transaction._id}`}>
-              <p>{transaction.date.slice(0, 10)}</p>
-              <ColorTag
-                color={
-                  filterState
-                    ? transaction.category
-                      ? transaction.category.color // prüft, ob Kategorie existiert (Fehlervermeidug!)
-                      : "var(--default-color)" // Fallback-Farbe, wenn keine
-                    : transaction.type === "Income"
-                    ? "var(--income-color)"
-                    : "var(--expense-color)"
-                }
-              />
-              <p>{transaction.description}</p>
-              <p>
-                {transaction.category
-                  ? transaction.category.name
-                  : "No Category"}
-              </p>
-              <p className="amount">
-                {transaction.amount.toLocaleString("de-DE", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                €
-              </p>
-            </StyledLink>
-          </li>
-        ))}
+        {filteredTransactions
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .map((transaction) => (
+            <li key={transaction._id}>
+              <StyledLink href={`/transactions/${transaction._id}`}>
+                <p>{transaction.date.slice(0, 10)}</p>
+                <ColorTag
+                  color={
+                    filterState
+                      ? transaction.category
+                        ? transaction.category.color // prüft, ob Kategorie existiert (Fehlervermeidug!)
+                        : "RED" // Fallback-Farbe, wenn keine
+                      : transaction.type === "Income"
+                      ? "var(--income-color)"
+                      : "var(--expense-color)"
+                  }
+                />
+                <p>{transaction.description}</p>
+                <p>
+                  {transaction.category
+                    ? transaction.category.name
+                    : "No Category"}
+                </p>
+                <p className="amount">
+                  {transaction.amount.toLocaleString("de-DE", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </p>
+              </StyledLink>
+            </li>
+          ))}
       </StyledList>
 
       <Navbar />
