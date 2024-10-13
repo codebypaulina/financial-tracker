@@ -148,6 +148,17 @@ export default function CategoriesPage() {
               key={category._id}
               $isNull={category.totalAmount <= 0}
             >
+              <ColorTag
+                color={
+                  filterState
+                    ? category.color
+                    : category.type === "Income"
+                    ? "var(--income-color)"
+                    : "var(--expense-color)"
+                }
+                $isNull={category.totalAmount <= 0}
+              />
+
               <StyledLink href={`/categories/${category._id}`}>
                 <strong>{category.name}</strong> | {category.type} |{" "}
                 <span>
@@ -192,6 +203,18 @@ const ButtonContainer = styled.div`
 
 const StyledListItem = styled.li`
   color: ${(props) => (props.$isNull ? "#5a5a5a" : "inherit")};
+`;
+
+const ColorTag = styled.span`
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 10px;
+
+  background-color: ${(props) => props.color};
+  opacity: ${(props) =>
+    props.$isNull ? 0.15 : 1}; // geringere Deckkraft bei totalAmount <= 0
 `;
 
 const StyledLink = styled(Link)`
