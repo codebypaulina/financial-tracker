@@ -44,6 +44,10 @@ export default function CategoriesPage() {
 
   const remainingIncome = totalIncome - totalExpense;
 
+  // tooltip (%)
+  const totalFilteredValue =
+    filterState === "Expense" ? totalExpense : totalIncome;
+
   // chartData basierend auf filterState
   const filteredChartData = filterState
     ? categories
@@ -71,10 +75,6 @@ export default function CategoriesPage() {
           color: "var(--income-color)",
         },
       ];
-
-  // chart-tooltip (%)
-  const totalFilteredValue =
-    filterState === "Expense" ? totalExpense : totalIncome;
 
   // categories gefiltert nach type im filterState
   const filteredCategories = filterState

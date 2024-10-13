@@ -33,21 +33,39 @@ export default function TransactionsPage() {
 
   const remainingIncome = totalIncome - totalExpense;
 
-  const chartData = [
-    {
-      id: "Expenses",
-      label: "Expenses",
-      value: totalExpense,
-      color: "var(--expense-color)",
-    },
-    {
-      id: "Remaining Income",
-      label: "Remaining Income",
-      value: remainingIncome,
-      color: "var(--income-color)",
-    },
-  ];
+  // tooltip (%)
+  const totalFilteredValue =
+    filterState === "Expense" ? totalExpense : totalIncome;
 
+  // chartData basierend auf filterState
+  const chartData = filterState
+    ? categories
+        .filter(
+          (category) =>
+            category.totalAmount > 0 && category.type === filterState
+        )
+        .map((category) => ({
+          id: category.id,
+          label: category.name,
+          value: category.totalAmount,
+          color: category.color,
+        }))
+    : [
+        {
+          id: "Expenses",
+          label: "Expenses",
+          value: totalExpense,
+          color: "var(--expense-color)",
+        },
+        {
+          id: "Remaining Income",
+          label: "Remaining Income",
+          value: remainingIncome,
+          color: "var(--income-color)",
+        },
+      ];
+
+  // transactions gefiltert nach type im filterState
   const filteredTransactions = filterState
     ? transactions.filter((transaction) => transaction.type === filterState)
     : transactions;
@@ -74,7 +92,10 @@ export default function TransactionsPage() {
             animate={false} // Segmente springen nicht
             enableArcLabels={false} // keine Zahlen im Segment
             tooltip={({ datum }) => {
-              const percentage = ((datum.value / totalIncome) * 100).toFixed(0);
+              const percentage = (
+                (datum.value / totalFilteredValue) *
+                100
+              ).toFixed(0);
               return (
                 <div>
                   {datum.label}: <strong>{percentage} %</strong>
