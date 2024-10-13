@@ -112,14 +112,21 @@ export default function TransactionsPage() {
         {filteredTransactions.map((transaction) => (
           <li key={transaction._id}>
             <StyledLink href={`/transactions/${transaction._id}`}>
-              {transaction.date.slice(0, 10)} |{" "}
-              <strong>{transaction.type}</strong> | {transaction.amount} € |{" "}
-              {transaction.description} |{" "}
-              <span>
+              <p>{transaction.date.slice(0, 10)}</p>
+              <ColorTag type={transaction.type} />
+              <p>{transaction.description}</p>
+              <p>
                 {transaction.category
                   ? transaction.category.name
                   : "No Category"}
-              </span>
+              </p>
+              <p>
+                {transaction.amount.toLocaleString("de-DE", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+                €
+              </p>
             </StyledLink>
           </li>
         ))}
@@ -153,9 +160,21 @@ const ButtonContainer = styled.div`
   }
 `;
 
+const ColorTag = styled.span`
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+
+  background-color: ${(props) =>
+    props.type === "Income" ? "var(--income-color)" : "var(--expense-color)"};
+`;
+
 const StyledLink = styled(Link)`
+  display: flex;
   text-decoration: none;
   color: inherit;
+  gap: 10px;
 
   &:hover {
     font-weight: bold;
