@@ -3,6 +3,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
+import { useState } from "react";
 
 // hier muss dynamischer Import, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -11,8 +12,9 @@ const ResponsivePie = dynamic(
 );
 
 export default function CategoriesPage() {
-  const { data: categories, error } = useSWR("/api/categories");
+  const [filterState, setFilterState] = useState(null);
 
+  const { data: categories, error } = useSWR("/api/categories");
   if (error) return <h3>Failed to load categories</h3>;
   if (!categories) return <h3>Loading...</h3>;
 
@@ -41,6 +43,17 @@ export default function CategoriesPage() {
       color: "var(--income-color)",
     },
   ];
+
+  // categories gefiltert nach type im filterState
+  const filteredCategories = filterState
+    ? categories.filter((category) => category.type === filterState)
+    : categories;
+
+  function toggleTypeFilter(type) {
+    setFilterState((prevFilterState) =>
+      prevFilterState === type ? null : type
+    );
+  }
 
   return (
     <>
@@ -77,8 +90,23 @@ export default function CategoriesPage() {
         </ChartSection>
       )}
 
+      <ButtonContainer>
+        <button
+          onClick={() => toggleTypeFilter("Income")}
+          className={filterState === "Income" ? "active" : ""}
+        >
+          Incomes
+        </button>
+        <button
+          onClick={() => toggleTypeFilter("Expense")}
+          className={filterState === "Expense" ? "active" : ""}
+        >
+          Expenses
+        </button>
+      </ButtonContainer>
+
       <ul>
-        {categories.map((category) => (
+        {filteredCategories.map((category) => (
           <li key={category._id}>
             <StyledLink href={`/categories/${category._id}`}>
               <strong>{category.name}</strong> | {category.type} |{" "}
@@ -110,5 +138,23 @@ const StyledLink = styled(Link)`
 
   &:hover {
     font-weight: bold;
+  }
+`;
+
+const ButtonContainer = styled.div`
+  margin: 10px 0;
+
+  button {
+    margin-right: 10px;
+    padding: 5px 10px;
+    background-color: var(--button-background-color);
+    color: var(--button-text-color);
+    border: none;
+    cursor: pointer;
+
+    &.active {
+      background-color: var(--button-active-color);
+      color: var(--button-active-text-color);
+    }
   }
 `;
