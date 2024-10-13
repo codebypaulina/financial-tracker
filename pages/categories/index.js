@@ -57,6 +57,10 @@ export default function CategoriesPage() {
         },
       ];
 
+  // chart-tooltip (%)
+  const totalFilteredValue =
+    filterState === "Expense" ? totalExpense : totalIncome;
+
   // categories gefiltert nach type im filterState
   const filteredCategories = filterState
     ? categories.filter((category) => category.type === filterState)
@@ -92,7 +96,10 @@ export default function CategoriesPage() {
             animate={false} // Segmente springen nicht
             enableArcLabels={false} // keine Zahlen im Segment
             tooltip={({ datum }) => {
-              const percentage = ((datum.value / totalIncome) * 100).toFixed(0);
+              const percentage = (
+                (datum.value / totalFilteredValue) *
+                100
+              ).toFixed(0);
               return (
                 <div>
                   {datum.label}: <strong>{percentage} %</strong>
