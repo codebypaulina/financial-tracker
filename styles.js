@@ -11,6 +11,9 @@ export default createGlobalStyle`
     --button-active-text-color: #333333;
     --button-active-color: #e0e0e0; /* aktive  */
     --button-hover-color: #444444; /* hover */
+
+    --income-color: #B4E5A2;
+    --expense-color: #FF9393;
   }
 
   *, *::before, *::after {
