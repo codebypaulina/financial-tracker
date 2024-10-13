@@ -59,19 +59,11 @@ export default function TransactionsPage() {
   }
 
   return (
-    <>
+    <ContentContainer>
       <h1>Transactions</h1>
-      <h2>
-        Total Balance:{" "}
-        {remainingIncome.toLocaleString("de-DE", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}{" "}
-        €
-      </h2>
 
       {chartData.length > 0 && (
-        <ChartSection>
+        <ChartContainer>
           <ResponsivePie
             data={chartData}
             colors={{ datum: "data.color" }} // nutzt definierte Farben für Segmente
@@ -90,8 +82,19 @@ export default function TransactionsPage() {
               );
             }}
           />
-        </ChartSection>
+        </ChartContainer>
       )}
+
+      <BalanceContainer>
+        <p>Total Balance</p>
+        <p className="value">
+          {remainingIncome.toLocaleString("de-DE", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}{" "}
+          €
+        </p>
+      </BalanceContainer>
 
       <ButtonContainer>
         <button
@@ -108,7 +111,7 @@ export default function TransactionsPage() {
         </button>
       </ButtonContainer>
 
-      <ul>
+      <StyledList>
         {filteredTransactions.map((transaction) => (
           <li key={transaction._id}>
             <StyledLink href={`/transactions/${transaction._id}`}>
@@ -120,63 +123,125 @@ export default function TransactionsPage() {
                   ? transaction.category.name
                   : "No Category"}
               </p>
-              <p>
+              <p className="amount">
                 {transaction.amount.toLocaleString("de-DE", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                })}
+                })}{" "}
                 €
               </p>
             </StyledLink>
           </li>
         ))}
-      </ul>
+      </StyledList>
 
       <Navbar />
-    </>
+    </ContentContainer>
   );
 }
 
-const ChartSection = styled.div`
+const ContentContainer = styled.div`
+  display: flex;
+  flex-direction: column; // untereinander
+  align-items: center; // content zentriert
+  padding: 20px 20px 75px 20px; // 75px: Nav
+  // margin: 0 auto;
+
+  h1 {
+    margin-bottom: 20px;
+  }
+`;
+
+const ChartContainer = styled.div`
   height: 200px;
   width: 200px;
 `;
 
+const BalanceContainer = styled.div`
+  align-self: flex-end; // rechts im ContentContainer, nicht zentriert
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  p.value {
+    font-weight: bold;
+  }
+`;
+
 const ButtonContainer = styled.div`
-  margin: 10px 0;
+  align-self: flex-end; // rechts im ContentContainer, nicht zentriert
+  margin: 20px 0;
 
   button {
-    margin-right: 10px;
-    padding: 5px 10px;
     background-color: var(--button-background-color);
     color: var(--button-text-color);
     border: none;
+    border-radius: 20px;
     cursor: pointer;
+    width: 90px;
+    height: 30px;
+    padding: 5px 10px;
+
+    &:hover {
+      transform: scale(1.07);
+      font-weight: bold;
+    }
 
     &.active {
       background-color: var(--button-active-color);
       color: var(--button-active-text-color);
+      font-weight: bold;
+    }
+  }
+
+  button:first-child {
+    margin-right: 10px;
+  }
+`;
+
+const StyledList = styled.ul`
+  list-style-type: none;
+  width: 100%;
+  max-width: 800px;
+
+  li {
+    background-color: var(--list-item-background);
+    min-width: 500px; // wg. content
+    padding: 10px 15px;
+    margin: 10px 0;
+    border-radius: 20px;
+  }
+`;
+
+const StyledLink = styled(Link)`
+  display: grid;
+  grid-template-columns: 90px 20px 1fr 1fr 100px; // NICHT mehr ändern!
+  gap: 10px;
+  align-items: center; // wg. ColorTag
+  text-decoration: none;
+
+  p.amount {
+    text-align: right;
+    font-weight: bold;
+  }
+
+  &:hover {
+    font-weight: bold;
+
+    span,
+    p.amount {
+      transform: scale(1.07);
     }
   }
 `;
 
 const ColorTag = styled.span`
-  display: inline-block;
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  justify-self: center;
+  margin-right: 7px;
 
   background-color: ${(props) =>
     props.type === "Income" ? "var(--income-color)" : "var(--expense-color)"};
-`;
-
-const StyledLink = styled(Link)`
-  display: flex;
-  text-decoration: none;
-  color: inherit;
-  gap: 10px;
-
-  &:hover {
-    font-weight: bold;
-  }
 `;
