@@ -129,7 +129,10 @@ export default function CategoriesPage() {
         {filteredCategories
           .sort((a, b) => b.totalAmount - a.totalAmount) // nach totalAmount absteigend sortiert
           .map((category) => (
-            <li key={category._id}>
+            <StyledListItem
+              key={category._id}
+              $isNull={category.totalAmount <= 0}
+            >
               <StyledLink href={`/categories/${category._id}`}>
                 <strong>{category.name}</strong> | {category.type} |{" "}
                 <span>
@@ -140,7 +143,7 @@ export default function CategoriesPage() {
                   €
                 </span>
               </StyledLink>
-            </li>
+            </StyledListItem>
           ))}
       </ul>
 
@@ -152,15 +155,6 @@ export default function CategoriesPage() {
 const ChartSection = styled.div`
   height: 200px;
   width: 200px;
-`;
-
-const StyledLink = styled(Link)`
-  text-decoration: none;
-  color: inherit;
-
-  &:hover {
-    font-weight: bold;
-  }
 `;
 
 const ButtonContainer = styled.div`
@@ -178,5 +172,18 @@ const ButtonContainer = styled.div`
       background-color: var(--button-active-color);
       color: var(--button-active-text-color);
     }
+  }
+`;
+
+const StyledListItem = styled.li`
+  color: ${(props) => (props.$isNull ? "#5a5a5a" : "inherit")};
+`;
+
+const StyledLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    font-weight: bold;
   }
 `;
