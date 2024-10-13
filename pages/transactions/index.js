@@ -3,6 +3,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
+import { useState } from "react";
 
 // dynamisch, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -11,6 +12,8 @@ const ResponsivePie = dynamic(
 );
 
 export default function TransactionsPage() {
+  const [filterState, setFilterState] = useState(null);
+
   const { data: transactions, error: errorTransactions } =
     useSWR("/api/transactions");
   const { data: categories, error: errorCategories } =
@@ -44,6 +47,16 @@ export default function TransactionsPage() {
       color: "var(--income-color)",
     },
   ];
+
+  const filteredTransactions = filterState
+    ? transactions.filter((transaction) => transaction.type === filterState)
+    : transactions;
+
+  function toggleTypeFilter(type) {
+    setFilterState((prevFilterState) =>
+      prevFilterState === type ? null : type
+    );
+  }
 
   return (
     <>
@@ -80,8 +93,23 @@ export default function TransactionsPage() {
         </ChartSection>
       )}
 
+      <ButtonContainer>
+        <button
+          onClick={() => toggleTypeFilter("Income")}
+          className={filterState === "Income" ? "active" : ""}
+        >
+          Incomes
+        </button>
+        <button
+          onClick={() => toggleTypeFilter("Expense")}
+          className={filterState === "Expense" ? "active" : ""}
+        >
+          Expenses
+        </button>
+      </ButtonContainer>
+
       <ul>
-        {transactions.map((transaction) => (
+        {filteredTransactions.map((transaction) => (
           <li key={transaction._id}>
             <StyledLink href={`/transactions/${transaction._id}`}>
               {transaction.date.slice(0, 10)} |{" "}
@@ -105,6 +133,24 @@ export default function TransactionsPage() {
 const ChartSection = styled.div`
   height: 200px;
   width: 200px;
+`;
+
+const ButtonContainer = styled.div`
+  margin: 10px 0;
+
+  button {
+    margin-right: 10px;
+    padding: 5px 10px;
+    background-color: var(--button-background-color);
+    color: var(--button-text-color);
+    border: none;
+    cursor: pointer;
+
+    &.active {
+      background-color: var(--button-active-color);
+      color: var(--button-active-text-color);
+    }
+  }
 `;
 
 const StyledLink = styled(Link)`
