@@ -126,20 +126,22 @@ export default function CategoriesPage() {
       </ButtonContainer>
 
       <ul>
-        {filteredCategories.map((category) => (
-          <li key={category._id}>
-            <StyledLink href={`/categories/${category._id}`}>
-              <strong>{category.name}</strong> | {category.type} |{" "}
-              <span>
-                {category.totalAmount.toLocaleString("de-DE", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                €
-              </span>
-            </StyledLink>
-          </li>
-        ))}
+        {filteredCategories
+          .sort((a, b) => b.totalAmount - a.totalAmount) // nach totalAmount absteigend sortiert
+          .map((category) => (
+            <li key={category._id}>
+              <StyledLink href={`/categories/${category._id}`}>
+                <strong>{category.name}</strong> | {category.type} |{" "}
+                <span>
+                  {category.totalAmount.toLocaleString("de-DE", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </span>
+              </StyledLink>
+            </li>
+          ))}
       </ul>
 
       <Navbar />
