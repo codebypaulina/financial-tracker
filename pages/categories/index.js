@@ -3,7 +3,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // hier muss dynamischer Import, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -13,6 +13,21 @@ const ResponsivePie = dynamic(
 
 export default function CategoriesPage() {
   const [filterState, setFilterState] = useState(null);
+
+  useEffect(() => {
+    const storedFilterState = sessionStorage.getItem("filterState");
+    if (storedFilterState) {
+      setFilterState(storedFilterState);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (filterState) {
+      sessionStorage.setItem("filterState", filterState);
+    } else {
+      sessionStorage.removeItem("filterState"); // vermeidet Probleme durch veraltete/leere Daten
+    }
+  }, [filterState]);
 
   const { data: categories, error } = useSWR("/api/categories");
   if (error) return <h3>Failed to load categories</h3>;
