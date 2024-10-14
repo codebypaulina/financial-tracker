@@ -12,7 +12,9 @@ const ResponsivePie = dynamic(
 );
 
 export default function TransactionsPage() {
-  const [filterState, setFilterState] = useState(null);
+  const [filterType, setFilterType] = useState(null);
+  const [filterDate, setFilterDate] = useState({ from: null, to: null });
+  const [showDateFilter, setShowDateFilter] = useState(false); // für Popup
 
   const { data: transactions, error: errorTransactions } =
     useSWR("/api/transactions");
@@ -35,14 +37,13 @@ export default function TransactionsPage() {
 
   // tooltip (%)
   const totalFilteredValue =
-    filterState === "Expense" ? totalExpense : totalIncome;
+    filterType === "Expense" ? totalExpense : totalIncome;
 
-  // chartData basierend auf filterState
-  const chartData = filterState
+  // chartData basierend auf filterType
+  const chartData = filterType
     ? categories
         .filter(
-          (category) =>
-            category.totalAmount > 0 && category.type === filterState
+          (category) => category.totalAmount > 0 && category.type === filterType
         )
         .map((category) => ({
           id: category.id,
@@ -65,15 +66,39 @@ export default function TransactionsPage() {
         },
       ];
 
-  // transactions gefiltert nach type im filterState
-  const filteredTransactions = filterState
-    ? transactions.filter((transaction) => transaction.type === filterState)
-    : transactions;
+  // transactions gefiltert nach filterType & filterDate
+  const filteredTransactions = transactions.filter(
+    (transaction) =>
+      (!filterType || transaction.type === filterType) &&
+      (!filterDate.from ||
+        new Date(transaction.date) >= new Date(filterDate.from)) &&
+      (!filterDate.to || new Date(transaction.date) <= new Date(filterDate.to))
+  );
 
   function toggleTypeFilter(type) {
-    setFilterState((prevFilterState) =>
-      prevFilterState === type ? null : type
-    );
+    setFilterType((prevFilterType) => (prevFilterType === type ? null : type));
+  }
+
+  function toggleDateFilterPopup() {
+    setShowDateFilter((prevState) => !prevState);
+    // wenn Popup geöffnet, from/to aktuelles Datum, falls leer
+    if (!showDateFilter && (!filterDate.from || !filterDate.to)) {
+      const today = new Date().toISOString().split("T")[0];
+      setFilterDate({ from: today, to: today }); // direkt zu filterDate
+    }
+  }
+
+  function handleDateChange(event) {
+    const { name, value } = event.target;
+    setFilterDate((prev) => ({ ...prev, [name]: value })); // filterDate ändern
+  }
+
+  function applyDateFilter() {
+    setShowDateFilter(false); // Popup nach "OK" zu
+  }
+
+  function clearDateFilter() {
+    setFilterDate({ from: null, to: null }); // from/to zurück
   }
 
   return (
@@ -118,19 +143,49 @@ export default function TransactionsPage() {
       </BalanceContainer>
 
       <ButtonContainer>
+        <button onClick={toggleDateFilterPopup}>Date</button>
+
         <button
           onClick={() => toggleTypeFilter("Income")}
-          className={filterState === "Income" ? "active" : ""}
+          className={filterType === "Income" ? "active" : ""}
         >
           Incomes
         </button>
         <button
           onClick={() => toggleTypeFilter("Expense")}
-          className={filterState === "Expense" ? "active" : ""}
+          className={filterType === "Expense" ? "active" : ""}
         >
           Expenses
         </button>
       </ButtonContainer>
+
+      {showDateFilter && (
+        <>
+          <Overlay onClick={toggleDateFilterPopup} />
+
+          <DateFilterPopup>
+            <label htmlFor="from">From:</label>
+            <input
+              type="date"
+              id="from"
+              name="from"
+              value={filterDate.from || ""} // vorherige Auswahl oder leer
+              onChange={handleDateChange}
+            />
+            <label htmlFor="to">To:</label>
+            <input
+              type="date"
+              id="to"
+              name="to"
+              value={filterDate.to || ""} // vorherige Auswahl oder leer
+              onChange={handleDateChange}
+            />
+
+            {/* <button onClick={applyDateFilter}>OK</button> */}
+            <button onClick={clearDateFilter}>Clear</button>
+          </DateFilterPopup>
+        </>
+      )}
 
       <StyledList>
         {filteredTransactions
@@ -141,10 +196,10 @@ export default function TransactionsPage() {
                 <p>{transaction.date.slice(0, 10)}</p>
                 <ColorTag
                   color={
-                    filterState
+                    filterType
                       ? transaction.category
                         ? transaction.category.color // prüft, ob Kategorie existiert (Fehlervermeidug!)
-                        : "RED" // Fallback-Farbe, wenn keine
+                        : "#RED" // Fallback-Farbe, wenn keine
                       : transaction.type === "Income"
                       ? "var(--income-color)"
                       : "var(--expense-color)"
@@ -172,6 +227,48 @@ export default function TransactionsPage() {
     </ContentContainer>
   );
 }
+
+const Overlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6); // abgedunkelt
+  z-index: 9; // Popup über content
+`;
+
+const DateFilterPopup = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--button-background-color);
+  color: var(--button-text-color);
+  padding: 20px;
+  border-radius: 15px;
+  z-index: 10; // Popup über Overlay
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+
+  button {
+    background-color: var(--button-active-color);
+    color: var(--button-active-text-color);
+    width: 50px;
+    height: 30px;
+    padding: 5px 10px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+
+    &:hover {
+      transform: scale(1.07);
+      font-weight: bold;
+    }
+  }
+`;
 
 const ContentContainer = styled.div`
   display: flex;
