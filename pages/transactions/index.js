@@ -197,46 +197,43 @@ export default function TransactionsPage() {
               onChange={handleDateChange}
             />
 
-            {/* <button onClick={applyDateFilter}>OK</button> */}
             <button onClick={clearDateFilter}>Clear</button>
           </DateFilterPopup>
         </>
       )}
 
       <StyledList>
-        {filteredTransactions
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .map((transaction) => (
-            <li key={transaction._id}>
-              <StyledLink href={`/transactions/${transaction._id}`}>
-                <p>{transaction.date.slice(0, 10)}</p>
-                <ColorTag
-                  color={
-                    filterType
-                      ? transaction.category
-                        ? transaction.category.color // prüft, ob Kategorie existiert (Fehlervermeidug!)
-                        : "#RED" // Fallback-Farbe, wenn keine
-                      : transaction.type === "Income"
-                      ? "var(--income-color)"
-                      : "var(--expense-color)"
-                  }
-                />
-                <p>{transaction.description}</p>
-                <p>
-                  {transaction.category
-                    ? transaction.category.name
-                    : "No Category"}
-                </p>
-                <p className="amount">
-                  {transaction.amount.toLocaleString("de-DE", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}{" "}
-                  €
-                </p>
-              </StyledLink>
-            </li>
-          ))}
+        {filteredTransactions.map((transaction) => (
+          <li key={transaction._id}>
+            <StyledLink href={`/transactions/${transaction._id}`}>
+              <p>{transaction.date.slice(0, 10)}</p>
+              <ColorTag
+                color={
+                  filterType
+                    ? transaction.category
+                      ? transaction.category.color // prüft, ob Kategorie existiert (Fehlervermeidug!)
+                      : "BLACK" // Fallback-Farbe, wenn keine
+                    : transaction.type === "Expense"
+                    ? "var(--expense-color)"
+                    : "var(--income-color)"
+                }
+              />
+              <p>{transaction.description}</p>
+              <p>
+                {transaction.category
+                  ? transaction.category.name
+                  : "No Category"}
+              </p>
+              <p className="amount">
+                {transaction.amount.toLocaleString("de-DE", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                €
+              </p>
+            </StyledLink>
+          </li>
+        ))}
       </StyledList>
 
       <Navbar />
