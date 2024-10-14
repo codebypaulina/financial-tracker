@@ -67,6 +67,7 @@ export default function TransactionsPage() {
       ];
 
   // transactions gefiltert nach filterType & filterDate
+  // Umwandlung in Date-Objekte, sonst nimmt es das aktuelle Datum nicht mit in die Liste rein
   const filteredTransactions = transactions.filter(
     (transaction) =>
       (!filterType || transaction.type === filterType) &&
@@ -75,27 +76,37 @@ export default function TransactionsPage() {
       (!filterDate.to || new Date(transaction.date) <= new Date(filterDate.to))
   );
 
+  // für filterDate, damit Popup
+  const sortedTransactions = [...transactions].sort(
+    (a, b) => new Date(a.date) - new Date(b.date)
+  );
+  const earliestDate = sortedTransactions[0]?.date.split("T")[0]; // 1. transaction
+  const latestDate =
+    sortedTransactions[sortedTransactions.length - 1]?.date.split("T")[0]; // letzte transaction
+
   function toggleTypeFilter(type) {
     setFilterType((prevFilterType) => (prevFilterType === type ? null : type));
   }
 
   function toggleDateFilterPopup() {
     setShowDateFilter((prevState) => !prevState);
-    // wenn Popup geöffnet, from/to aktuelles Datum, falls leer
+
     if (!showDateFilter && (!filterDate.from || !filterDate.to)) {
-      const today = new Date().toISOString().split("T")[0];
-      setFilterDate({ from: today, to: today }); // direkt zu filterDate
+      setFilterDate({
+        from: earliestDate || null,
+        to: latestDate || null,
+      });
     }
   }
 
   function handleDateChange(event) {
     const { name, value } = event.target;
-    setFilterDate((prev) => ({ ...prev, [name]: value })); // filterDate ändern
+    setFilterDate((prev) => ({ ...prev, [name]: value })); // Popup behält zuletzt eingestellten Werte, weil filterDate immer aktualisiert wird
   }
 
-  function applyDateFilter() {
-    setShowDateFilter(false); // Popup nach "OK" zu
-  }
+  // function applyDateFilter() {
+  //   setShowDateFilter(false); // Popup nach "OK" zu
+  // }
 
   function clearDateFilter() {
     setFilterDate({ from: null, to: null }); // from/to zurück
