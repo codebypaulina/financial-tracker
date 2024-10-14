@@ -66,23 +66,31 @@ export default function TransactionsPage() {
         },
       ];
 
-  // transactions gefiltert nach filterType & filterDate
-  // Umwandlung in Date-Objekte, sonst nimmt es das aktuelle Datum nicht mit in die Liste rein
-  const filteredTransactions = transactions.filter(
-    (transaction) =>
-      (!filterType || transaction.type === filterType) &&
-      (!filterDate.from ||
-        new Date(transaction.date) >= new Date(filterDate.from)) &&
-      (!filterDate.to || new Date(transaction.date) <= new Date(filterDate.to))
+  // erst transactions nach Datum absteigend sortieren
+  // (in Date-Objekt, sonst nimmt es das aktuelle Datum nicht mit in die Liste rein)
+  const sortedTransactions = transactions.sort(
+    (a, b) => new Date(b.date) - new Date(a.date)
   );
 
-  // für filterDate, damit Popup
-  const sortedTransactions = [...transactions].sort(
-    (a, b) => new Date(a.date) - new Date(b.date)
-  );
-  const earliestDate = sortedTransactions[0]?.date.split("T")[0]; // 1. transaction
-  const latestDate =
-    sortedTransactions[sortedTransactions.length - 1]?.date.split("T")[0]; // letzte transaction
+  // danach auf sortedTransactions beide Filter anwenden
+  const filteredTransactions = sortedTransactions.filter((transaction) => {
+    const typeMatches = !filterType || transaction.type === filterType; // filterType
+
+    const transactionDate = new Date(transaction.date);
+    const fromDate = filterDate.from ? new Date(filterDate.from) : null;
+    const toDate = filterDate.to ? new Date(filterDate.to) : null;
+
+    const dateMatches =
+      (!fromDate || transactionDate >= fromDate) &&
+      (!toDate || transactionDate <= toDate); // filterDate
+
+    return typeMatches && dateMatches;
+  });
+
+  // für Popup earliestDate/latestDate
+  const earliestDate =
+    sortedTransactions[sortedTransactions.length - 1]?.date.split("T")[0]; // neuste transaction
+  const latestDate = sortedTransactions[0]?.date.split("T")[0]; // älterste transaction
 
   function toggleTypeFilter(type) {
     setFilterType((prevFilterType) => (prevFilterType === type ? null : type));
@@ -91,25 +99,22 @@ export default function TransactionsPage() {
   function toggleDateFilterPopup() {
     setShowDateFilter((prevState) => !prevState);
 
-    if (!showDateFilter && (!filterDate.from || !filterDate.to)) {
-      setFilterDate({
-        from: earliestDate || null,
-        to: latestDate || null,
-      });
+    // Popup from/to default: falls bereits eingestellte Werte gibt, dann diese, ansonsten gesamte (ungefilterte) Liste
+    if (!showDateFilter) {
+      setFilterDate((prev) => ({
+        from: prev.from ?? earliestDate,
+        to: prev.to ?? latestDate,
+      }));
     }
   }
 
   function handleDateChange(event) {
     const { name, value } = event.target;
-    setFilterDate((prev) => ({ ...prev, [name]: value })); // Popup behält zuletzt eingestellten Werte, weil filterDate immer aktualisiert wird
+    setFilterDate((prev) => ({ ...prev, [name]: value }));
   }
 
-  // function applyDateFilter() {
-  //   setShowDateFilter(false); // Popup nach "OK" zu
-  // }
-
   function clearDateFilter() {
-    setFilterDate({ from: null, to: null }); // from/to zurück
+    setFilterDate({ from: null, to: null });
   }
 
   return (
