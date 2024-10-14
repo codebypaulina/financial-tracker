@@ -14,6 +14,8 @@ export default createGlobalStyle`
 
     --income-color: #B4E5A2;
     --expense-color: #FF9393;
+
+    --list-item-background: #323232;
   }
 
   *, *::before, *::after {
