@@ -194,19 +194,6 @@ export default function TransactionsPage() {
         </BalanceContainer>
 
         <ButtonContainer>
-          {/* <button
-          onClick={toggleDateFilterPopup}
-          className={
-            (filterDate.from !== earliestDate ||
-              filterDate.to !== latestDate) &&
-            filterDate.from &&
-            filterDate.to
-              ? "active"
-              : ""
-          }
-        >
-          <DateFilterIcon />
-        </button> */}
           <IconWrapper
             onClick={toggleDateFilterPopup}
             className={
@@ -385,6 +372,7 @@ const BalanceContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin: 0 30px 0 0;
 
   p.value {
     font-weight: bold;
