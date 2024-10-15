@@ -148,7 +148,16 @@ export default function CategoriesPage() {
           {filteredCategories
             .sort((a, b) => b.totalAmount - a.totalAmount) // nach totalAmount absteigend sortiert
             .map((category) => (
-              <li key={category._id} $isNull={category.totalAmount <= 0}>
+              <li
+                key={category._id}
+                $isNull={category.totalAmount <= 0}
+                style={{
+                  backgroundColor:
+                    category.totalAmount <= 0
+                      ? "#242424"
+                      : "var(--list-item-background)",
+                }}
+              >
                 <ColorTag
                   color={
                     filterState
