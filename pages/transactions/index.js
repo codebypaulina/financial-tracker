@@ -266,7 +266,13 @@ export default function TransactionsPage() {
           {filteredTransactions.map((transaction) => (
             <li key={transaction._id}>
               <StyledLink href={`/transactions/${transaction._id}`}>
-                <p>{transaction.date.slice(0, 10)}</p>
+                <p className="date">
+                  {new Date(transaction.date).toLocaleDateString("de-DE", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })}
+                </p>
 
                 <ColorTag
                   $filterType={filterType}
@@ -367,6 +373,11 @@ const ContentContainer = styled.div`
 const ChartContainer = styled.div`
   height: 200px;
   width: 200px;
+
+  @media (max-width: 600px) {
+    height: 150px;
+    width: 150px;
+  }
 `;
 
 const BalanceContainer = styled.div`
@@ -452,19 +463,36 @@ const StyledList = styled.ul`
 
   li {
     background-color: var(--list-item-background);
-    min-width: 500px; // wg. content
     padding: 10px 15px;
     margin: 10px 0;
     border-radius: 20px;
+
+    // min-width: 500px; // wg. content
+    min-width: 0;
+
+    @media (max-width: 600px) {
+      padding: 8px 10px;
+    }
   }
 `;
 
 const StyledLink = styled(Link)`
   display: grid;
-  grid-template-columns: 90px 20px 1fr 1fr 100px; // NICHT mehr ändern!
-  gap: 10px;
+  grid-template-columns: 90px 20px 1fr 1fr 100px; // Desktop: NICHT mehr ändern!
+  gap: 5px;
   align-items: center; // wg. ColorTag
   text-decoration: none;
+
+  @media (max-width: 600px) {
+    grid-template-columns:
+      minmax(65px, auto) 10px minmax(90px, 1fr) minmax(72px, 1fr)
+      70px;
+    gap: 2px;
+
+    p {
+      font-size: 0.75rem;
+    }
+  }
 
   p.amount {
     text-align: right;
@@ -494,4 +522,9 @@ const ColorTag = styled.span`
       : props.$transactionType === "Income" // main view: type color
       ? "var(--income-color)"
       : "var(--expense-color)"};
+
+  @media (max-width: 600px) {
+    width: 8px;
+    height: 8px;
+  }
 `;
