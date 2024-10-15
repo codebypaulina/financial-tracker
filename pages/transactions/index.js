@@ -152,48 +152,49 @@ export default function TransactionsPage() {
     );
 
   return (
-    <ContentContainer>
-      <h1>Transactions</h1>
+    <PageWrapper>
+      <ContentContainer>
+        <h1>Transactions</h1>
 
-      {chartData.length > 0 && (
-        <ChartContainer>
-          <ResponsivePie
-            data={chartData}
-            colors={{ datum: "data.color" }}
-            innerRadius={0.5} // 50 % ausgeschnitten
-            padAngle={2} // Abstand zwischen Segmenten
-            cornerRadius={3} // rundere Ecken der Segmente
-            arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
-            animate={false} // Segmente springen nicht
-            enableArcLabels={false} // keine Zahlen im Segment
-            tooltip={({ datum }) => {
-              const percentage = (
-                (datum.value / totalFilteredValue) *
-                100
-              ).toFixed(0);
-              return (
-                <div>
-                  {datum.label}: <strong>{percentage} %</strong>
-                </div>
-              );
-            }}
-          />
-        </ChartContainer>
-      )}
+        {chartData.length > 0 && (
+          <ChartContainer>
+            <ResponsivePie
+              data={chartData}
+              colors={{ datum: "data.color" }}
+              innerRadius={0.5} // 50 % ausgeschnitten
+              padAngle={2} // Abstand zwischen Segmenten
+              cornerRadius={3} // rundere Ecken der Segmente
+              arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
+              animate={false} // Segmente springen nicht
+              enableArcLabels={false} // keine Zahlen im Segment
+              tooltip={({ datum }) => {
+                const percentage = (
+                  (datum.value / totalFilteredValue) *
+                  100
+                ).toFixed(0);
+                return (
+                  <div>
+                    {datum.label}: <strong>{percentage} %</strong>
+                  </div>
+                );
+              }}
+            />
+          </ChartContainer>
+        )}
 
-      <BalanceContainer>
-        <p>{totalBalanceLabel}</p>
-        <p className="value">
-          {totalBalanceValue.toLocaleString("de-DE", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}{" "}
-          €
-        </p>
-      </BalanceContainer>
+        <BalanceContainer>
+          <p>{totalBalanceLabel}</p>
+          <p className="value">
+            {totalBalanceValue.toLocaleString("de-DE", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}{" "}
+            €
+          </p>
+        </BalanceContainer>
 
-      <ButtonContainer>
-        {/* <button
+        <ButtonContainer>
+          {/* <button
           onClick={toggleDateFilterPopup}
           className={
             (filterDate.from !== earliestDate ||
@@ -206,8 +207,7 @@ export default function TransactionsPage() {
         >
           <DateFilterIcon />
         </button> */}
-        <IconWrapper>
-          <DateFilterIcon
+          <IconWrapper
             onClick={toggleDateFilterPopup}
             className={
               (filterDate.from !== earliestDate ||
@@ -217,84 +217,86 @@ export default function TransactionsPage() {
                 ? "active"
                 : ""
             }
-          />
-        </IconWrapper>
+          >
+            <DateFilterIcon />
+          </IconWrapper>
 
-        <button
-          onClick={() => toggleTypeFilter("Income")}
-          className={filterType === "Income" ? "active" : "incomes"}
-        >
-          Incomes
-        </button>
-        <button
-          onClick={() => toggleTypeFilter("Expense")}
-          className={filterType === "Expense" ? "active" : ""}
-        >
-          Expenses
-        </button>
-      </ButtonContainer>
+          <button
+            onClick={() => toggleTypeFilter("Income")}
+            className={filterType === "Income" ? "active" : "incomes"}
+          >
+            Incomes
+          </button>
+          <button
+            onClick={() => toggleTypeFilter("Expense")}
+            className={filterType === "Expense" ? "active" : ""}
+          >
+            Expenses
+          </button>
+        </ButtonContainer>
 
-      {showDateFilter && (
-        <>
-          <Overlay onClick={toggleDateFilterPopup} />
+        {showDateFilter && (
+          <>
+            <Overlay onClick={toggleDateFilterPopup} />
 
-          <DateFilterPopup>
-            <label htmlFor="from">From:</label>
-            <input
-              type="date"
-              id="from"
-              name="from"
-              value={filterDate.from || ""} // vorherige Auswahl oder leer
-              onChange={handleDateChange}
-            />
-            <label htmlFor="to">To:</label>
-            <input
-              type="date"
-              id="to"
-              name="to"
-              value={filterDate.to || ""} // vorherige Auswahl oder leer
-              onChange={handleDateChange}
-            />
-
-            <button onClick={clearDateFilter}>Clear</button>
-          </DateFilterPopup>
-        </>
-      )}
-
-      <StyledList>
-        {filteredTransactions.map((transaction) => (
-          <li key={transaction._id}>
-            <StyledLink href={`/transactions/${transaction._id}`}>
-              <p>{transaction.date.slice(0, 10)}</p>
-
-              <ColorTag
-                $filterType={filterType}
-                $transactionType={transaction.type}
-                $categoryColor={
-                  transaction.category ? transaction.category.color : "BLACK"
-                }
+            <DateFilterPopup>
+              <label htmlFor="from">From:</label>
+              <input
+                type="date"
+                id="from"
+                name="from"
+                value={filterDate.from || ""} // vorherige Auswahl oder leer
+                onChange={handleDateChange}
+              />
+              <label htmlFor="to">To:</label>
+              <input
+                type="date"
+                id="to"
+                name="to"
+                value={filterDate.to || ""} // vorherige Auswahl oder leer
+                onChange={handleDateChange}
               />
 
-              <p>{transaction.description}</p>
-              <p>
-                {transaction.category
-                  ? transaction.category.name
-                  : "No Category"}
-              </p>
-              <p className="amount">
-                {transaction.amount.toLocaleString("de-DE", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                €
-              </p>
-            </StyledLink>
-          </li>
-        ))}
-      </StyledList>
+              <button onClick={clearDateFilter}>Clear</button>
+            </DateFilterPopup>
+          </>
+        )}
 
-      <Navbar />
-    </ContentContainer>
+        <StyledList>
+          {filteredTransactions.map((transaction) => (
+            <li key={transaction._id}>
+              <StyledLink href={`/transactions/${transaction._id}`}>
+                <p>{transaction.date.slice(0, 10)}</p>
+
+                <ColorTag
+                  $filterType={filterType}
+                  $transactionType={transaction.type}
+                  $categoryColor={
+                    transaction.category ? transaction.category.color : "BLACK"
+                  }
+                />
+
+                <p>{transaction.description}</p>
+                <p>
+                  {transaction.category
+                    ? transaction.category.name
+                    : "No Category"}
+                </p>
+                <p className="amount">
+                  {transaction.amount.toLocaleString("de-DE", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </p>
+              </StyledLink>
+            </li>
+          ))}
+        </StyledList>
+
+        <Navbar />
+      </ContentContainer>
+    </PageWrapper>
   );
 }
 
@@ -340,12 +342,22 @@ const DateFilterPopup = styled.div`
   }
 `;
 
-const ContentContainer = styled.div`
+const PageWrapper = styled.div`
   display: flex;
-  flex-direction: column; // untereinander
+  flex-direction: column; // vertikal angeordnet
+  align-items: center; // ContentContainer vertikal zentriert
+  width: 100%;
+  height: 100vh; // gesamte Höhe von Viewport
+`;
+
+const ContentContainer = styled.div`
+  width: 100%;
+  max-width: 800px; // wegen list & buttons
+  margin: 0 auto; // content horizontal zentriert
+  display: flex;
+  flex-direction: column; // content untereinander
   align-items: center; // content zentriert
   padding: 20px 20px 75px 20px; // 75px: Nav
-  // margin: 0 auto;
 
   h1 {
     margin-bottom: 20px;
@@ -369,11 +381,10 @@ const BalanceContainer = styled.div`
 `;
 
 const ButtonContainer = styled.div`
-  // align-self: flex-end; // rechts im ContentContainer, nicht zentriert
-  // margin: 20px 0;
-
   display: flex;
-  gap: 10px; //
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
   margin: 20px 0;
 
   button {
@@ -397,18 +408,31 @@ const ButtonContainer = styled.div`
       font-weight: bold;
     }
   }
+
+  button:nth-of-type(2) {
+    margin-left: 20px; // expenses-button
+  }
 `;
 
 const IconWrapper = styled.div`
+  margin-right: auto; // links von liste
   background-color: var(--button-background-color);
   color: var(--button-text-color);
-  width: 90px;
+  width: 30px;
   height: 30px;
-  border-radius: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   svg {
-    width: 25px;
-    height: 25px;
+    width: 20px;
+    height: 20px;
+    stroke-width: ${(props) => (props.className === "active" ? "2.3" : "1.5")};
+
+    &:hover {
+      stroke-width: 2.3;
+    }
   }
 
   &:hover {
@@ -424,7 +448,7 @@ const IconWrapper = styled.div`
 const StyledList = styled.ul`
   list-style-type: none;
   width: 100%;
-  max-width: 600px;
+  // max-width: 600px; // ist zu ContentContainer ausgelagert
 
   li {
     background-color: var(--list-item-background);
