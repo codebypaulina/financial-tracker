@@ -4,6 +4,7 @@ import Link from "next/link";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import DateFilterIcon from "@/public/icons/date-filter.svg";
 
 // dynamisch, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -192,7 +193,32 @@ export default function TransactionsPage() {
       </BalanceContainer>
 
       <ButtonContainer>
-        <button onClick={toggleDateFilterPopup}>Date</button>
+        {/* <button
+          onClick={toggleDateFilterPopup}
+          className={
+            (filterDate.from !== earliestDate ||
+              filterDate.to !== latestDate) &&
+            filterDate.from &&
+            filterDate.to
+              ? "active"
+              : ""
+          }
+        >
+          <DateFilterIcon />
+        </button> */}
+        <IconWrapper>
+          <DateFilterIcon
+            onClick={toggleDateFilterPopup}
+            className={
+              (filterDate.from !== earliestDate ||
+                filterDate.to !== latestDate) &&
+              filterDate.from &&
+              filterDate.to
+                ? "active"
+                : ""
+            }
+          />
+        </IconWrapper>
 
         <button
           onClick={() => toggleTypeFilter("Income")}
@@ -343,7 +369,11 @@ const BalanceContainer = styled.div`
 `;
 
 const ButtonContainer = styled.div`
-  align-self: flex-end; // rechts im ContentContainer, nicht zentriert
+  // align-self: flex-end; // rechts im ContentContainer, nicht zentriert
+  // margin: 20px 0;
+
+  display: flex;
+  gap: 10px; //
   margin: 20px 0;
 
   button {
@@ -367,9 +397,27 @@ const ButtonContainer = styled.div`
       font-weight: bold;
     }
   }
+`;
 
-  button.incomes {
-    margin: 0 10px 0 10px;
+const IconWrapper = styled.div`
+  background-color: var(--button-background-color);
+  color: var(--button-text-color);
+  width: 90px;
+  height: 30px;
+  border-radius: 20px;
+
+  svg {
+    width: 25px;
+    height: 25px;
+  }
+
+  &:hover {
+    transform: scale(1.07);
+  }
+
+  &.active {
+    background-color: var(--button-active-color);
+    color: var(--button-active-text-color);
   }
 `;
 
