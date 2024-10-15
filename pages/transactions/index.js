@@ -4,6 +4,7 @@ import Link from "next/link";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import DateFilterIcon from "@/public/icons/date-filter.svg";
 
 // dynamisch, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -14,7 +15,7 @@ const ResponsivePie = dynamic(
 export default function TransactionsPage() {
   const [filterType, setFilterType] = useState(null);
   const [filterDate, setFilterDate] = useState({ from: null, to: null });
-  const [showDateFilter, setShowDateFilter] = useState(false); // für Popup
+  const [showDateFilter, setShowDateFilter] = useState(false); // Popup date-filter
 
   const { data: transactions, error: errorTransactions } =
     useSWR("/api/transactions");
@@ -24,29 +25,51 @@ export default function TransactionsPage() {
   if (errorTransactions || errorCategories) return <h3>Failed to load data</h3>;
   if (!transactions || !categories) return <h3>Loading...</h3>;
 
-  // chart
-  const totalIncome = categories
-    .filter((category) => category.type === "Income")
-    .reduce((sum, category) => sum + category.totalAmount, 0);
+  // *** SORTIERTE transactions ***
+  // erst transactions nach Datum absteigend sortieren
+  // (Date-Objekt: nimmt sonst aktuelles Datum nicht mit rein)
+  const sortedTransactions = transactions.sort(
+    (a, b) => new Date(b.date) - new Date(a.date)
+  );
 
-  const totalExpense = categories
-    .filter((category) => category.type === "Expense")
-    .reduce((sum, category) => sum + category.totalAmount, 0);
+  // *** SORTIERTE & GEFILTERTE transactions ***
+  // danach auf sortedTransactions type- & date-filter anwenden
+  const filteredTransactions = sortedTransactions.filter((transaction) => {
+    const typeMatches = !filterType || transaction.type === filterType; // type-filter
 
-  const remainingIncome = totalIncome - totalExpense;
+    const transactionDate = new Date(transaction.date);
+    const fromDate = filterDate.from ? new Date(filterDate.from) : null;
+    const toDate = filterDate.to ? new Date(filterDate.to) : null;
 
-  // tooltip (%)
-  const totalFilteredValue =
-    filterType === "Expense" ? totalExpense : totalIncome;
+    const dateMatches =
+      (!fromDate || transactionDate >= fromDate) &&
+      (!toDate || transactionDate <= toDate); // date-filter
+
+    return typeMatches && dateMatches;
+  });
+
+  // *** SORTIERTE & GEFILTERTE categories mit totalAmount ***
+  // totalAmounts pro category basierend auf filteredTransactions summieren
+  const categoriesWithAmounts = categories.map((category) => {
+    const totalAmount = filteredTransactions
+      .filter(
+        (transaction) =>
+          transaction.category &&
+          transaction.category._id.toString() === category._id.toString() // !!
+      ) // nur die ta filtern, die dieser ca zugehören
+      .reduce((sum, transaction) => sum + transaction.amount, 0); // amounts dieser ta summieren
+
+    return { ...category, totalAmount }; // ca mit totalAmount
+  });
 
   // chartData basierend auf filterType
   const chartData = filterType
-    ? categories
+    ? categoriesWithAmounts
         .filter(
           (category) => category.totalAmount > 0 && category.type === filterType
-        )
+        ) // keine leeren & mit passendem type
         .map((category) => ({
-          id: category.id,
+          id: category._id,
           label: category.name,
           value: category.totalAmount,
           color: category.color,
@@ -55,42 +78,35 @@ export default function TransactionsPage() {
         {
           id: "Expenses",
           label: "Expenses",
-          value: totalExpense,
+          value: categoriesWithAmounts
+            .filter((category) => category.type === "Expense")
+            .reduce((sum, category) => sum + category.totalAmount, 0), // total expenses
           color: "var(--expense-color)",
         },
         {
           id: "Remaining Income",
           label: "Remaining Income",
-          value: remainingIncome,
+          value:
+            categoriesWithAmounts
+              .filter((category) => category.type === "Income")
+              .reduce((sum, category) => sum + category.totalAmount, 0) -
+            categoriesWithAmounts
+              .filter((category) => category.type === "Expense")
+              .reduce((sum, category) => sum + category.totalAmount, 0), // remaining income = total incomes - total expenses
           color: "var(--income-color)",
         },
       ];
 
-  // erst transactions nach Datum absteigend sortieren
-  // (in Date-Objekt, sonst nimmt es das aktuelle Datum nicht mit in die Liste rein)
-  const sortedTransactions = transactions.sort(
-    (a, b) => new Date(b.date) - new Date(a.date)
+  // für tooltip %: Basis type
+  const totalFilteredValue = chartData.reduce(
+    (sum, data) => sum + data.value,
+    0
   );
 
-  // danach auf sortedTransactions beide Filter anwenden
-  const filteredTransactions = sortedTransactions.filter((transaction) => {
-    const typeMatches = !filterType || transaction.type === filterType; // filterType
-
-    const transactionDate = new Date(transaction.date);
-    const fromDate = filterDate.from ? new Date(filterDate.from) : null;
-    const toDate = filterDate.to ? new Date(filterDate.to) : null;
-
-    const dateMatches =
-      (!fromDate || transactionDate >= fromDate) &&
-      (!toDate || transactionDate <= toDate); // filterDate
-
-    return typeMatches && dateMatches;
-  });
-
-  // für Popup earliestDate/latestDate
+  // für Popup from/to: ungefilterte list
   const earliestDate =
-    sortedTransactions[sortedTransactions.length - 1]?.date.split("T")[0]; // neuste transaction
-  const latestDate = sortedTransactions[0]?.date.split("T")[0]; // älterste transaction
+    transactions[transactions.length - 1]?.date.split("T")[0]; // neuste transaction
+  const latestDate = transactions[0]?.date.split("T")[0]; // älterste transaction
 
   function toggleTypeFilter(type) {
     setFilterType((prevFilterType) => (prevFilterType === type ? null : type));
@@ -99,7 +115,7 @@ export default function TransactionsPage() {
   function toggleDateFilterPopup() {
     setShowDateFilter((prevState) => !prevState);
 
-    // Popup from/to default: falls bereits eingestellte Werte gibt, dann diese, ansonsten gesamte (ungefilterte) Liste
+    // Popup from/to default: falls bereits eingestellte Werte gibt, dann diese, ansonsten ungefilterte list
     if (!showDateFilter) {
       setFilterDate((prev) => ({
         from: prev.from ?? earliestDate,
@@ -117,127 +133,170 @@ export default function TransactionsPage() {
     setFilterDate({ from: null, to: null });
   }
 
+  // Total Balance basierend auf type-filter
+  const totalBalanceLabel =
+    filterType === "Income"
+      ? "Total Incomes"
+      : filterType === "Expense"
+      ? "Total Expenses"
+      : "Total Balance";
+
+  const totalBalanceValue = categoriesWithAmounts
+    .filter((category) => (filterType ? category.type === filterType : true))
+    .reduce(
+      (sum, category) =>
+        sum +
+        category.totalAmount *
+          (category.type === "Expense" && !filterType ? -1 : 1),
+      0
+    );
+
   return (
-    <ContentContainer>
-      <h1>Transactions</h1>
+    <PageWrapper>
+      <ContentContainer>
+        <h1>Transactions</h1>
 
-      {chartData.length > 0 && (
-        <ChartContainer>
-          <ResponsivePie
-            data={chartData}
-            colors={{ datum: "data.color" }} // nutzt definierte Farben für Segmente
-            innerRadius={0.5} // 50 % ausgeschnitten
-            padAngle={2} // Abstand zwischen Segmenten
-            cornerRadius={3} // rundere Ecken der Segmente
-            arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
-            animate={false} // Segmente springen nicht
-            enableArcLabels={false} // keine Zahlen im Segment
-            tooltip={({ datum }) => {
-              const percentage = (
-                (datum.value / totalFilteredValue) *
-                100
-              ).toFixed(0);
-              return (
-                <div>
-                  {datum.label}: <strong>{percentage} %</strong>
-                </div>
-              );
-            }}
-          />
-        </ChartContainer>
-      )}
-
-      <BalanceContainer>
-        <p>Total Balance</p>
-        <p className="value">
-          {remainingIncome.toLocaleString("de-DE", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}{" "}
-          €
-        </p>
-      </BalanceContainer>
-
-      <ButtonContainer>
-        <button onClick={toggleDateFilterPopup}>Date</button>
-
-        <button
-          onClick={() => toggleTypeFilter("Income")}
-          className={filterType === "Income" ? "active" : ""}
-        >
-          Incomes
-        </button>
-        <button
-          onClick={() => toggleTypeFilter("Expense")}
-          className={filterType === "Expense" ? "active" : ""}
-        >
-          Expenses
-        </button>
-      </ButtonContainer>
-
-      {showDateFilter && (
-        <>
-          <Overlay onClick={toggleDateFilterPopup} />
-
-          <DateFilterPopup>
-            <label htmlFor="from">From:</label>
-            <input
-              type="date"
-              id="from"
-              name="from"
-              value={filterDate.from || ""} // vorherige Auswahl oder leer
-              onChange={handleDateChange}
+        {chartData.length > 0 && (
+          <ChartContainer>
+            <ResponsivePie
+              data={chartData}
+              colors={{ datum: "data.color" }}
+              innerRadius={0.5} // 50 % ausgeschnitten
+              padAngle={2} // Abstand zwischen Segmenten
+              cornerRadius={3} // rundere Ecken der Segmente
+              arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
+              animate={false} // Segmente springen nicht
+              enableArcLabels={false} // keine Zahlen im Segment
+              tooltip={({ datum }) => {
+                const percentage = (
+                  (datum.value / totalFilteredValue) *
+                  100
+                ).toFixed(0);
+                return (
+                  <div>
+                    {datum.label}: <strong>{percentage} %</strong>
+                  </div>
+                );
+              }}
             />
-            <label htmlFor="to">To:</label>
-            <input
-              type="date"
-              id="to"
-              name="to"
-              value={filterDate.to || ""} // vorherige Auswahl oder leer
-              onChange={handleDateChange}
-            />
+          </ChartContainer>
+        )}
 
-            <button onClick={clearDateFilter}>Clear</button>
-          </DateFilterPopup>
-        </>
-      )}
+        <BalanceContainer>
+          <p>{totalBalanceLabel}</p>
+          <p className="value">
+            {totalBalanceValue.toLocaleString("de-DE", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}{" "}
+            €
+          </p>
+        </BalanceContainer>
 
-      <StyledList>
-        {filteredTransactions.map((transaction) => (
-          <li key={transaction._id}>
-            <StyledLink href={`/transactions/${transaction._id}`}>
-              <p>{transaction.date.slice(0, 10)}</p>
-              <ColorTag
-                color={
-                  filterType
-                    ? transaction.category
-                      ? transaction.category.color // prüft, ob Kategorie existiert (Fehlervermeidug!)
-                      : "BLACK" // Fallback-Farbe, wenn keine
-                    : transaction.type === "Expense"
-                    ? "var(--expense-color)"
-                    : "var(--income-color)"
-                }
+        <ButtonContainer>
+          {/* <button
+          onClick={toggleDateFilterPopup}
+          className={
+            (filterDate.from !== earliestDate ||
+              filterDate.to !== latestDate) &&
+            filterDate.from &&
+            filterDate.to
+              ? "active"
+              : ""
+          }
+        >
+          <DateFilterIcon />
+        </button> */}
+          <IconWrapper
+            onClick={toggleDateFilterPopup}
+            className={
+              (filterDate.from !== earliestDate ||
+                filterDate.to !== latestDate) &&
+              filterDate.from &&
+              filterDate.to
+                ? "active"
+                : ""
+            }
+          >
+            <DateFilterIcon />
+          </IconWrapper>
+
+          <button
+            onClick={() => toggleTypeFilter("Income")}
+            className={filterType === "Income" ? "active" : "incomes"}
+          >
+            Incomes
+          </button>
+          <button
+            onClick={() => toggleTypeFilter("Expense")}
+            className={filterType === "Expense" ? "active" : ""}
+          >
+            Expenses
+          </button>
+        </ButtonContainer>
+
+        {showDateFilter && (
+          <>
+            <Overlay onClick={toggleDateFilterPopup} />
+
+            <DateFilterPopup>
+              <label htmlFor="from">From:</label>
+              <input
+                type="date"
+                id="from"
+                name="from"
+                value={filterDate.from || ""} // vorherige Auswahl oder leer
+                onChange={handleDateChange}
               />
-              <p>{transaction.description}</p>
-              <p>
-                {transaction.category
-                  ? transaction.category.name
-                  : "No Category"}
-              </p>
-              <p className="amount">
-                {transaction.amount.toLocaleString("de-DE", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                €
-              </p>
-            </StyledLink>
-          </li>
-        ))}
-      </StyledList>
+              <label htmlFor="to">To:</label>
+              <input
+                type="date"
+                id="to"
+                name="to"
+                value={filterDate.to || ""} // vorherige Auswahl oder leer
+                onChange={handleDateChange}
+              />
 
-      <Navbar />
-    </ContentContainer>
+              <button onClick={clearDateFilter}>Clear</button>
+            </DateFilterPopup>
+          </>
+        )}
+
+        <StyledList>
+          {filteredTransactions.map((transaction) => (
+            <li key={transaction._id}>
+              <StyledLink href={`/transactions/${transaction._id}`}>
+                <p>{transaction.date.slice(0, 10)}</p>
+
+                <ColorTag
+                  $filterType={filterType}
+                  $transactionType={transaction.type}
+                  $categoryColor={
+                    transaction.category ? transaction.category.color : "BLACK"
+                  }
+                />
+
+                <p>{transaction.description}</p>
+                <p>
+                  {transaction.category
+                    ? transaction.category.name
+                    : "No Category"}
+                </p>
+                <p className="amount">
+                  {transaction.amount.toLocaleString("de-DE", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </p>
+              </StyledLink>
+            </li>
+          ))}
+        </StyledList>
+
+        <Navbar />
+      </ContentContainer>
+    </PageWrapper>
   );
 }
 
@@ -283,12 +342,22 @@ const DateFilterPopup = styled.div`
   }
 `;
 
-const ContentContainer = styled.div`
+const PageWrapper = styled.div`
   display: flex;
-  flex-direction: column; // untereinander
+  flex-direction: column; // vertikal angeordnet
+  align-items: center; // ContentContainer vertikal zentriert
+  width: 100%;
+  height: 100vh; // gesamte Höhe von Viewport
+`;
+
+const ContentContainer = styled.div`
+  width: 100%;
+  max-width: 800px; // wegen list & buttons
+  margin: 0 auto; // content horizontal zentriert
+  display: flex;
+  flex-direction: column; // content untereinander
   align-items: center; // content zentriert
   padding: 20px 20px 75px 20px; // 75px: Nav
-  // margin: 0 auto;
 
   h1 {
     margin-bottom: 20px;
@@ -312,7 +381,10 @@ const BalanceContainer = styled.div`
 `;
 
 const ButtonContainer = styled.div`
-  align-self: flex-end; // rechts im ContentContainer, nicht zentriert
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
   margin: 20px 0;
 
   button {
@@ -337,15 +409,46 @@ const ButtonContainer = styled.div`
     }
   }
 
-  button:first-child {
-    margin-right: 10px;
+  button:nth-of-type(2) {
+    margin-left: 20px; // expenses-button
+  }
+`;
+
+const IconWrapper = styled.div`
+  margin-right: auto; // links von liste
+  background-color: var(--button-background-color);
+  color: var(--button-text-color);
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: ${(props) => (props.className === "active" ? "2.3" : "1.5")};
+
+    &:hover {
+      stroke-width: 2.3;
+    }
+  }
+
+  &:hover {
+    transform: scale(1.07);
+  }
+
+  &.active {
+    background-color: var(--button-active-color);
+    color: var(--button-active-text-color);
   }
 `;
 
 const StyledList = styled.ul`
   list-style-type: none;
   width: 100%;
-  max-width: 800px;
+  // max-width: 600px; // ist zu ContentContainer ausgelagert
 
   li {
     background-color: var(--list-item-background);
@@ -385,5 +488,10 @@ const ColorTag = styled.span`
   justify-self: center;
   margin-right: 7px;
 
-  background-color: ${(props) => props.color};
+  background-color: ${(props) =>
+    props.$filterType // wenn type-filter aktiv
+      ? props.$categoryColor // dann category color
+      : props.$transactionType === "Income" // main view: type color
+      ? "var(--income-color)"
+      : "var(--expense-color)"};
 `;

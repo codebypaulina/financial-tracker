@@ -8,8 +8,6 @@ export default async function handler(request, response) {
     try {
       const transactions = await Transaction.find().populate("category"); // holt alle Transaktionen aus database + `populate` für Details der entspr. Kategorie
 
-      console.log("fetched transactions: ", transactions);
-
       response.status(200).json(transactions);
     } catch (error) {
       response.status(500).json({ error: "Failed to fetch transactions" });

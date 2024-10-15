@@ -7,7 +7,7 @@ export default createGlobalStyle`
     --secondary-text-color: #cccccc;
 
     --button-background-color: #333333; /* nicht aktive  */
-    --button-text-color: #ffffff; /* nicht aktive  */
+    --button-text-color: #cccccc; /* nicht aktive  */
     --button-active-text-color: #333333;
     --button-active-color: #e0e0e0; /* aktive  */
     --button-hover-color: #444444; /* hover */
