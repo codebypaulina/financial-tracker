@@ -452,7 +452,7 @@ const StyledList = styled.ul`
   li {
     background-color: var(--list-item-background);
     padding: 10px 15px;
-    margin: 10px 0;
+    margin: 0 0 10px 0;
     border-radius: 20px;
 
     // min-width: 500px; // wg. content
