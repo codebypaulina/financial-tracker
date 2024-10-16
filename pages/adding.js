@@ -5,7 +5,7 @@ import FormAddCategory from "@/components/FormAddCategory";
 export default function AddingPage() {
   return (
     <>
-      <h1>Add Transaction / Category</h1>
+      {/* <h1>Add Transaction / Category</h1> */}
 
       <FormAddTransaction />
       <FormAddCategory />
