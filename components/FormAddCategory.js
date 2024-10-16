@@ -130,7 +130,7 @@ const ButtonContainer = styled.div`
     cursor: pointer;
     width: 70px;
     height: 30px;
-    margin: 0 7px 0 7px;
+    margin: 10px 7px 0 7px;
     padding: 5px 10px;
     transition: transform 0.2s;
 
