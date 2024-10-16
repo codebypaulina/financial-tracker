@@ -372,7 +372,7 @@ const BalanceContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 0 30px 0 0;
+  // margin: 0 30px 0 0;
 
   p.value {
     font-weight: bold;

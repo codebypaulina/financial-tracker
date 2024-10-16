@@ -218,7 +218,7 @@ const ContentContainer = styled.div`
   }
 
   @media (max-width: 400px) {
-    padding: 20px 50px 75px 50px;
+    padding: 20px 40px 75px 40px;
   }
 `;
 

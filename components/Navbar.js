@@ -47,7 +47,7 @@ export default function Navbar() {
         </NavbarItem>
 
         <NavbarItem $isActive={router.pathname === "/profile"}>
-          <Link href="/profile">
+          <Link href="">
             <IconWrapper $isActive={router.pathname === "/profile"}>
               <ProfileIcon width={100} height={100} />
             </IconWrapper>

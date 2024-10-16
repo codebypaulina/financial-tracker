@@ -186,10 +186,19 @@ const ContentContainer = styled.div`
   display: flex;
   flex-direction: column; // content untereinander
   align-items: center; // content zentriert
-  padding: 20px 20px 75px 20px; // 75px: Nav
+  // padding: 20px 20px 75px 20px; // 75px: Nav
+  padding: 20px 70px 75px 70px; // 75px: Nav
 
   h1 {
     margin-bottom: 20px;
+  }
+
+  @media (max-width: 600px) {
+    padding: 20px 60px 75px 20px;
+  }
+
+  @media (max-width: 400px) {
+    padding: 20px 40px 75px 40px;
   }
 `;
 
@@ -207,7 +216,7 @@ const BalanceContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 0 30px 20px 0;
+  margin: 0 0 20px 0;
 
   p.value {
     font-weight: bold;
@@ -234,7 +243,7 @@ const StyledListItem = styled.li`
 
 const StyledLink = styled(Link)`
   display: grid;
-  grid-template-columns: auto 1fr auto; // HIER AM ENDE AUTO WEG
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   text-decoration: none;
   padding: 0 15px 0 15px;
