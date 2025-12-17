@@ -80,11 +80,11 @@ export default function FormAddTransaction() {
           type="text"
           id="description"
           name="description"
-          placeholder="..."
+          placeholder=" ..."
         />
 
         <label htmlFor="amount">Amount:</label>
-        <input type="number" id="amount" name="amount" placeholder="0,00 €" />
+        <input type="number" id="amount" name="amount" placeholder=" 0,00 €" />
 
         <label htmlFor="date">Date:</label>
         <input type="date" id="date" name="date" />
@@ -142,6 +142,18 @@ const FormContainer = styled.form`
   select {
     cursor: pointer;
     margin-bottom: 0.8rem; // Abstand zw. Blöcken
+    border-radius: 0.5rem; // abgerundete Ecken
+    border: 0.07rem solid var(--button-hover-color);
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  select {
+    height: 1.5rem;
+    accent-color: var(
+      --button-hover-color
+    ); // Firefox: wenn Feld angeklickt, kein blauer Rahmen
   }
 
   input:last-of-type {
