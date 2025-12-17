@@ -45,7 +45,7 @@ export default createGlobalStyle`
   }
 
   h1 {
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
 
   h2 {
@@ -58,6 +58,10 @@ export default createGlobalStyle`
 
   /***********************************************************************/
 
+  
+  /****************** NOCH NICHT ***************
+   *********************************************
+   
   @media (min-width: 768px) {
     :root {
       --base-font-size: 18px; // Tablet
@@ -101,4 +105,7 @@ export default createGlobalStyle`
       font-size: 1.125rem;
     }
   }
+  
+  **********************************************
+  ****************** NOCH NICHT ****************/
 `;
