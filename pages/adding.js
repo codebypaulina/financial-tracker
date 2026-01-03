@@ -1,5 +1,6 @@
 "use client"; // ganz oben!
-import { useState } from "react"; // für selection
+import { useState, useEffect } from "react"; // useState für selection; useEffect, um selection automatisch vorauszuwählen, wenn query vorhanden
+import { useRouter } from "next/router"; // um query-Parameter aus URL zu lesen
 
 import Navbar from "@/components/Navbar";
 import FormAddTransaction from "@/components/FormAddTransaction";
@@ -8,6 +9,15 @@ import styled from "styled-components";
 
 export default function AddingPage() {
   const [selection, setSelection] = useState(null); // rendering von FormAddTransaction oder FormAddCategory basierend auf Auswahl
+
+  const router = useRouter(); // Zugriff auf router.query
+  // automatische Vorauswahl basierend auf URL:
+  useEffect(() => {
+    if (router.query.category) {
+      // wenn category-Parameter existiert (zB /adding?category=123),
+      setSelection("transaction"); // dann direkt FormAddTransaction rendern statt selection view
+    }
+  }, [router.query.category]); // läuft, sobald query-Wert verfügbar
 
   return (
     <PageWrapper>
