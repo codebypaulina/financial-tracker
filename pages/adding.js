@@ -7,7 +7,7 @@ import FormAddCategory from "@/components/FormAddCategory";
 import styled from "styled-components";
 
 export default function AddingPage() {
-  const [selection, setSelection] = useState(null);
+  const [selection, setSelection] = useState(null); // rendering von FormAddTransaction oder FormAddCategory basierend auf Auswahl
 
   return (
     <PageWrapper>
@@ -22,8 +22,12 @@ export default function AddingPage() {
         </h1>
       )}
 
-      {selection === "transaction" && <FormAddTransaction />}
-      {selection === "category" && <FormAddCategory />}
+      {selection === "transaction" && (
+        <FormAddTransaction onCancel={() => setSelection(null)} /> // onCancel für cancel-button als prop an forms übergeben (selection null = zur Frage zurück)
+      )}
+      {selection === "category" && (
+        <FormAddCategory onCancel={() => setSelection(null)} />
+      )}
 
       <Navbar />
     </PageWrapper>

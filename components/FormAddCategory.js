@@ -1,12 +1,12 @@
 import { useRouter } from "next/router";
 import styled from "styled-components";
 
-export default function FormAddCategory() {
+export default function FormAddCategory({ onCancel }) {
   const router = useRouter();
 
   // Cancel-Button
   function handleCancel() {
-    router.back(); // zurück zur vorherigen Seite (nochmal überdenken, ob er nicht lieber Formular clearen soll & zustätzl. X-Button dafür implemetieren)
+    onCancel(); // zurück zur Frage in AddingPage
   }
 
   // Save-Button
