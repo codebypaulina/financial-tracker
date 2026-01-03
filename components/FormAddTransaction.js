@@ -14,7 +14,9 @@ export default function FormAddTransaction({ onCancel }) {
 
   // Cancel-Button
   function handleCancel() {
-    onCancel(); // zurück zur Frage in AddingPage
+    if (onCancel)
+      onCancel(); // wenn onCancel von AddingPage übergeben wird, zurück zur selection view in AddingPage,
+    else router.back(); // ansonsten zurück zur vorherigen page (= CategoryDetailsPage)
   }
 
   // Save-Button

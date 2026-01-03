@@ -10,14 +10,25 @@ import styled from "styled-components";
 export default function AddingPage() {
   const [selection, setSelection] = useState(null); // rendering von FormAddTransaction oder FormAddCategory basierend auf Auswahl
 
+  /********* preselection per query + cancel-button *******************************************************************************************************
+   
+  A: AddingPage -> selection view -> button "transaction" -> FormAddTransaction -> button "Cancel" -> zurück zu selection view auf AddingPage
+  B: CategoryDetailsPage -> button "Add Transaction" -> FormAddTransaction -> button "Cancel" -> zurück zu CategoryDetailsPage                           */
+
   const router = useRouter(); // Zugriff auf router.query
+  const hasCategoryQuery = Boolean(router.query.category); // Zugriff auf query-Parameter "category" aus URL (zB /adding?category=123) (deep-link-Indikator)
+  // boolean = false (undefined, null, leer) / true
+  // hasCategoryQuery = true, wenn category-query-Parameter existiert, ansonsten hasCategoryQuery = false
+
   // automatische Vorauswahl basierend auf URL:
   useEffect(() => {
-    if (router.query.category) {
-      // wenn category-Parameter existiert (zB /adding?category=123),
+    if (hasCategoryQuery) {
+      // wenn category-Parameter existiert (hasCategoryQuery = true),
       setSelection("transaction"); // dann direkt FormAddTransaction rendern statt selection view
     }
-  }, [router.query.category]); // läuft, sobald query-Wert verfügbar
+  }, [hasCategoryQuery]); // effect läuft, sobald hasCategoryQuery von false auf true geht
+
+  /********************************************************************************************************************************************************/
 
   return (
     <PageWrapper>
@@ -33,7 +44,9 @@ export default function AddingPage() {
       )}
 
       {selection === "transaction" && (
-        <FormAddTransaction onCancel={() => setSelection(null)} /> // onCancel für cancel-button als prop an forms übergeben (selection null = zur Frage zurück)
+        <FormAddTransaction
+          onCancel={hasCategoryQuery ? undefined : () => setSelection(null)}
+        /> // wenn hasCategoryQuery = true, dann onCancel = undefined; ansonsten setzt onCancel selection = null (= zurück zur selection view)
       )}
       {selection === "category" && (
         <FormAddCategory onCancel={() => setSelection(null)} />
