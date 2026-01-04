@@ -55,7 +55,9 @@ export default function CategoryDetailsPage() {
           </StyledList>
         )}
         <button
-          onClick={() => router.push(`/adding?category=${id}`)}
+          onClick={() =>
+            router.push(`/adding?category=${id}&type=${category.type}`)
+          }
           className="add"
         >
           Add Transaction

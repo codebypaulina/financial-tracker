@@ -5,7 +5,7 @@ import styled from "styled-components";
 export default function FormAddTransaction({ onCancel }) {
   // onCancel von AddingPage für cancel-button
   const router = useRouter();
-  const { category: categoryId } = router.query; //
+  const { category: categoryId, type: preselectedType } = router.query; //
 
   const { data: categories, error } = useSWR("/api/categories"); // für Dropdown, damit Kategorien zur Auswahl abgerufen werden
 
@@ -56,12 +56,24 @@ export default function FormAddTransaction({ onCancel }) {
 
           <RadioRow>
             <RadioOption>
-              <input type="radio" id="income" name="type" value="Income" />
+              <input
+                type="radio"
+                id="income"
+                name="type"
+                value="Income"
+                defaultChecked={preselectedType === "Income"}
+              />
               <label htmlFor="income">Income</label>
             </RadioOption>
 
             <RadioOption>
-              <input type="radio" id="expense" name="type" value="Expense" />
+              <input
+                type="radio"
+                id="expense"
+                name="type"
+                value="Expense"
+                defaultChecked={preselectedType === "Expense"}
+              />
               <label htmlFor="expense">Expense</label>
             </RadioOption>
           </RadioRow>
