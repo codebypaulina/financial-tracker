@@ -99,7 +99,15 @@ export default function FormAddTransaction({ onCancel }) {
         />
 
         <label htmlFor="amount">Amount:</label>
-        <input type="number" id="amount" name="amount" placeholder=" 0,00 €" />
+        <input
+          type="number"
+          id="amount"
+          name="amount"
+          placeholder=" 0,00 €"
+          step="0.01" // Kommazahlen
+          min="0.01"
+          required
+        />
 
         <label htmlFor="date">Date:</label>
         <input type="date" id="date" name="date" />
