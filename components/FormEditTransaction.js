@@ -86,6 +86,7 @@ export default function FormEditTransaction() {
                 name="type"
                 value="Income"
                 defaultChecked={transaction.type === "Income"}
+                required
               />
               <label htmlFor="income">Income</label>
             </RadioOption>
@@ -108,6 +109,7 @@ export default function FormEditTransaction() {
           id="category"
           name="category"
           defaultValue={transaction.category._id}
+          required
         >
           {categories.map((category) => (
             <option key={category._id} value={category._id}>
@@ -122,6 +124,7 @@ export default function FormEditTransaction() {
           id="description"
           name="description"
           defaultValue={transaction.description}
+          required
         />
 
         <label htmlFor="amount">Amount:</label>
@@ -141,6 +144,7 @@ export default function FormEditTransaction() {
           id="date"
           name="date"
           defaultValue={transaction.date.slice(0, 10)} // nimmt nur erste 10 Zeichen aus Datum-String: YYYY-MM-DD
+          required
         />
 
         <ButtonContainer>

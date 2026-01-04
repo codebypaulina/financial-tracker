@@ -62,6 +62,7 @@ export default function FormAddTransaction({ onCancel }) {
                 name="type"
                 value="Income"
                 defaultChecked={preselectedType === "Income"}
+                required // reicht nur bei der 1. Option für Fehlermeldung
               />
               <label htmlFor="income">Income</label>
             </RadioOption>
@@ -80,7 +81,12 @@ export default function FormAddTransaction({ onCancel }) {
         </TypeGroup>
 
         <label htmlFor="category">Category:</label>
-        <select id="category" name="category" defaultValue={categoryId || ""}>
+        <select
+          id="category"
+          name="category"
+          defaultValue={categoryId || ""}
+          required
+        >
           <option value="">Select</option>
 
           {categories.map((category) => (
@@ -96,6 +102,7 @@ export default function FormAddTransaction({ onCancel }) {
           id="description"
           name="description"
           placeholder=" ..."
+          required
         />
 
         <label htmlFor="amount">Amount:</label>
@@ -110,7 +117,7 @@ export default function FormAddTransaction({ onCancel }) {
         />
 
         <label htmlFor="date">Date:</label>
-        <input type="date" id="date" name="date" />
+        <input type="date" id="date" name="date" required />
 
         <ButtonContainer>
           <button type="button" onClick={handleCancel}>
