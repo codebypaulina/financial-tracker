@@ -170,7 +170,7 @@ export default function CategoriesPage() {
                 />
 
                 <StyledLink
-                  href={`/categories/${category._id}`}
+                  href={`/categories/${category._id}?from=/categories`} // Eintrittspunkt CategoryDetailsPage  ;  "?from/categories": CategoriesPage als Herkunft merken, um nach delete von category wieder hierhin zurück (anstatt zur jetzt gelöschten CategoryDetailsPage)
                   $isNull={category.totalAmount <= 0}
                 >
                   <p>{category.name}</p>

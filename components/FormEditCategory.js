@@ -4,7 +4,7 @@ import styled from "styled-components";
 
 export default function FormEditCategory() {
   const router = useRouter();
-  const { id } = router.query; // ID der entspr. category aus URL extrahiert
+  const { id, from } = router.query; // ID der entspr. category aus URL extrahiert // "from" auslesen für back navigation nach delete von category
 
   const { data: category, error } = useSWR(id ? `/api/categories/${id}` : null); // category abrufen
 
@@ -48,21 +48,21 @@ export default function FormEditCategory() {
     const confirmed = window.confirm(
       "Are you sure you want to delete this category? This cannot be undone."
     );
-    if (confirmed) {
-      try {
-        const response = await fetch(`/api/categories/${id}`, {
-          method: "DELETE",
-        });
 
-        if (response.ok) {
-          console.log("DELETING SUCCESSFUL! (category)");
-          router.back(); // nach Löschen zurück zur vorherigen Seite
-        } else {
-          throw new Error("Failed to delete category");
-        }
-      } catch (error) {
-        console.error("Error deleting category: ", error);
-      }
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/categories/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete category");
+
+      console.log("DELETING SUCCESSFUL! (category)");
+
+      router.push(from || "/categories"); // wenn from existiert, dann nach delete dahin zurück, sonst fallback zu CategoriesPage (anstatt router.back() zur gelöschten CategoryDetailsPage)
+    } catch (error) {
+      console.error("Error deleting category: ", error);
     }
   }
 
