@@ -104,7 +104,7 @@ export default function FormAddTransaction({ onCancel }) {
           id="amount"
           name="amount"
           placeholder=" 0,00 €"
-          step="0.01" // Kommazahlen
+          step="any" // Kommazahlen; "any" statt "0.01", weils nur so in FormEditTransaction ging
           min="0.01"
           required
         />

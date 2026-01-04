@@ -130,6 +130,9 @@ export default function FormEditTransaction() {
           id="amount"
           name="amount"
           defaultValue={transaction.amount}
+          step="any" // hier Kommazahlen nur so (nicht "0.01")
+          min="0.01"
+          required
         />
 
         <label htmlFor="date">Date:</label>
