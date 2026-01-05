@@ -1,10 +1,14 @@
 import useSWR from "swr";
 import { useRouter } from "next/router";
 import styled from "styled-components";
+import { useState } from "react"; // state für ConfirmModal open/!open
+import ConfirmModal from "./ConfirmModal";
 
 export default function FormEditTransaction() {
   const router = useRouter();
   const { id } = router.query; // ID der entspr. transaction aus URL extrahiert
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false); // für ConfirmModal: steuert, ob Modal angezeigt wird
 
   const { data: transaction, error: errorTransaction } = useSWR(
     id ? `/api/transactions/${id}` : null
@@ -47,26 +51,28 @@ export default function FormEditTransaction() {
     }
   }
 
-  // Delete-Button
+  // 1. delete button: öffnet ConfirmModal, statt direkt Löschung
   async function handleDelete() {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this transaction? This cannot be undone."
-    );
-    if (confirmed) {
-      try {
-        const response = await fetch(`/api/transactions/${id}`, {
-          method: "DELETE",
-        });
+    setIsConfirmOpen(true);
+  }
 
-        if (response.ok) {
-          console.log("DELETING SUCCESSFUL! (transaction)!");
-          router.back(); // nach Löschen zurück zur vorherigen Seite
-        } else {
-          throw new Error("Failed to delete transaction");
-        }
-      } catch (error) {
-        console.error("Error deleting transaction: ", error);
-      }
+  // 2. delete confirm: nach ConfirmModal Löschung
+  async function handleConfirmDelete() {
+    try {
+      const response = await fetch(`/api/transactions/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete transaction");
+
+      setIsConfirmOpen(false); // Modal schließen nach erfolgreichem delete
+
+      console.log("DELETING SUCCESSFUL! (transaction)!");
+
+      router.back(); // nach Löschen zurück zur vorherigen Seite
+    } catch (error) {
+      console.error("Error deleting transaction: ", error);
+      setIsConfirmOpen(false); // Modal bei error schließen, damit user nicht festhängt
     }
   }
 
@@ -157,6 +163,16 @@ export default function FormEditTransaction() {
           <button type="submit">Save</button>
         </ButtonContainer>
       </FormContainer>
+
+      <ConfirmModal
+        open={isConfirmOpen} // Modal offen, wenn isConfirmOpen = true
+        title="Delete transaction?"
+        message="Are you sure you want to delete this transaction? This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete} // Löschung erst bei confirm
+        onCancel={() => setIsConfirmOpen(false)} // Modal schließen über Cancel / Overlay / ESC
+      />
     </PageWrapper>
   );
 }
