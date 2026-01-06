@@ -135,7 +135,7 @@ export default function HomePage() {
               $isHidden={hiddenCategories.includes(category._id)}
             >
               <StyledLink
-                href={`/categories/${category._id}`}
+                href={`/categories/${category._id}?from=/`} // Eintrittspunkt CategoryDetailsPage  ;  "?from/": HomePage als Herkunft merken, um nach delete von category wieder hierhin zurück (anstatt zur jetzt gelöschten CategoryDetailsPage)
                 $isHidden={hiddenCategories.includes(category._id)}
               >
                 <ColorTag

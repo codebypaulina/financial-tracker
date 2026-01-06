@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function CategoryDetailsPage() {
   const router = useRouter();
-  const { id } = router.query; // ID der entspr. category aus URL extrahiert
+  const { id, from } = router.query; // ID der entspr. category aus URL extrahiert // "from" auslesen, um an FormEditCategory weiterzugeben (für back navigation nach delete von category)
 
   const { data: category, error: errorCategory } = useSWR(
     id ? `/api/categories/${id}` : null
@@ -55,13 +55,23 @@ export default function CategoryDetailsPage() {
           </StyledList>
         )}
         <button
-          onClick={() => router.push(`/adding?category=${id}`)}
+          onClick={() =>
+            router.push(`/adding?category=${id}&type=${category.type}`)
+          }
           className="add"
         >
           Add Transaction
         </button>
         <button
-          onClick={() => router.push(`/categories/${id}/edit`)}
+          onClick={() =>
+            router.push(
+              `/categories/${id}/edit${
+                from ? `?from=${encodeURIComponent(from)}` : ""
+              }`
+              //  ${from ? `?from=${encodeURIComponent(from)}` : ""} übernimmt Herkunft (= from) in FormEditCategory, um nach delete dorthin zurück
+              // (ansonsten weiß in FormEditCategory nicht, ob davor auf pages/index.js oder pages/categories/index.js gewesen)
+            )
+          }
           className="edit"
         >
           Edit Category

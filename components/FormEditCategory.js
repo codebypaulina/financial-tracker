@@ -1,10 +1,14 @@
 import useSWR from "swr";
 import { useRouter } from "next/router";
 import styled from "styled-components";
+import { useState } from "react"; // state für ConfirmModal open/!open
+import ConfirmModal from "./ConfirmModal";
 
 export default function FormEditCategory() {
   const router = useRouter();
-  const { id } = router.query; // ID der entspr. category aus URL extrahiert
+  const { id, from } = router.query; // ID der entspr. category aus URL extrahiert // "from" auslesen für back navigation nach delete von category
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false); // für ConfirmModal: steuert, ob Modal angezeigt wird
 
   const { data: category, error } = useSWR(id ? `/api/categories/${id}` : null); // category abrufen
 
@@ -43,26 +47,34 @@ export default function FormEditCategory() {
     }
   }
 
-  // Delete-Button
+  // 1. delete button: öffnet ConfirmModal, statt direkt Löschung
   async function handleDelete() {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this category? This cannot be undone."
-    );
-    if (confirmed) {
-      try {
-        const response = await fetch(`/api/categories/${id}`, {
-          method: "DELETE",
-        });
+    setIsConfirmOpen(true);
+  }
 
-        if (response.ok) {
-          console.log("DELETING SUCCESSFUL! (category)");
-          router.back(); // nach Löschen zurück zur vorherigen Seite
-        } else {
-          throw new Error("Failed to delete category");
-        }
-      } catch (error) {
-        console.error("Error deleting category: ", error);
-      }
+  // 2. delete confirm: nach ConfirmModal Löschung
+  async function handleConfirmDelete() {
+    const hasTransactions = category.transactionCount > 0; // entscheidet mit transactionCount aus API zw. Fall A (leere ca) / B (ca + zugehörige ta)
+
+    try {
+      const url = hasTransactions
+        ? `/api/categories/${id}?cascade=true`
+        : `/api/categories/${id}`; // wählt endpoint-URL abhängig davon, ob cascade-delete nötig
+
+      const response = await fetch(url, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete category");
+
+      setIsConfirmOpen(false); // Modal schließen nach erfolgreichem delete
+
+      console.log("DELETING SUCCESSFUL! (category)");
+
+      router.push(from || "/categories"); // wenn from existiert, dann nach delete dahin zurück, sonst fallback zu CategoriesPage (anstatt router.back() zur gelöschten CategoryDetailsPage)
+    } catch (error) {
+      console.error("Error deleting category: ", error);
+      setIsConfirmOpen(false); // Modal bei error schließen, damit user nicht festhängt
     }
   }
 
@@ -81,6 +93,7 @@ export default function FormEditCategory() {
                 name="type"
                 value="Income"
                 defaultChecked={category.type === "Income"}
+                required
               />
               <label htmlFor="income">Income</label>
             </RadioOption>
@@ -99,7 +112,13 @@ export default function FormEditCategory() {
         </TypeGroup>
 
         <label htmlFor="name">Name:</label>
-        <input type="text" id="name" name="name" defaultValue={category.name} />
+        <input
+          type="text"
+          id="name"
+          name="name"
+          defaultValue={category.name}
+          required
+        />
 
         <label htmlFor="color">Color:</label>
         <input
@@ -107,6 +126,7 @@ export default function FormEditCategory() {
           id="color"
           name="color"
           defaultValue={category.color}
+          required
         />
 
         <ButtonContainer>
@@ -119,6 +139,24 @@ export default function FormEditCategory() {
           <button type="submit">Save</button>
         </ButtonContainer>
       </FormContainer>
+
+      <ConfirmModal
+        open={isConfirmOpen} // Modal offen, wenn isConfirmOpen = true
+        title={
+          category.transactionCount > 0
+            ? "Delete category & transactions?"
+            : "Delete category?"
+        }
+        message={
+          category.transactionCount > 0
+            ? "Are you sure you want to delete this category & all included transactions? This cannot be undone."
+            : "Are you sure you want to delete this category? This cannot be undone."
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete} // Löschung erst bei confirm
+        onCancel={() => setIsConfirmOpen(false)} // Modal schließen über Cancel / Overlay / ESC
+      />
     </PageWrapper>
   );
 }

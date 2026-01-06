@@ -1,10 +1,14 @@
 import useSWR from "swr";
 import { useRouter } from "next/router";
 import styled from "styled-components";
+import { useState } from "react"; // state für ConfirmModal open/!open
+import ConfirmModal from "./ConfirmModal";
 
 export default function FormEditTransaction() {
   const router = useRouter();
   const { id } = router.query; // ID der entspr. transaction aus URL extrahiert
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false); // für ConfirmModal: steuert, ob Modal angezeigt wird
 
   const { data: transaction, error: errorTransaction } = useSWR(
     id ? `/api/transactions/${id}` : null
@@ -47,26 +51,28 @@ export default function FormEditTransaction() {
     }
   }
 
-  // Delete-Button
+  // 1. delete button: öffnet ConfirmModal, statt direkt Löschung
   async function handleDelete() {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this transaction? This cannot be undone."
-    );
-    if (confirmed) {
-      try {
-        const response = await fetch(`/api/transactions/${id}`, {
-          method: "DELETE",
-        });
+    setIsConfirmOpen(true);
+  }
 
-        if (response.ok) {
-          console.log("DELETING SUCCESSFUL! (transaction)!");
-          router.back(); // nach Löschen zurück zur vorherigen Seite
-        } else {
-          throw new Error("Failed to delete transaction");
-        }
-      } catch (error) {
-        console.error("Error deleting transaction: ", error);
-      }
+  // 2. delete confirm: nach ConfirmModal Löschung
+  async function handleConfirmDelete() {
+    try {
+      const response = await fetch(`/api/transactions/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete transaction");
+
+      setIsConfirmOpen(false); // Modal schließen nach erfolgreichem delete
+
+      console.log("DELETING SUCCESSFUL! (transaction)!");
+
+      router.back(); // nach Löschen zurück zur vorherigen Seite
+    } catch (error) {
+      console.error("Error deleting transaction: ", error);
+      setIsConfirmOpen(false); // Modal bei error schließen, damit user nicht festhängt
     }
   }
 
@@ -86,6 +92,7 @@ export default function FormEditTransaction() {
                 name="type"
                 value="Income"
                 defaultChecked={transaction.type === "Income"}
+                required
               />
               <label htmlFor="income">Income</label>
             </RadioOption>
@@ -108,6 +115,7 @@ export default function FormEditTransaction() {
           id="category"
           name="category"
           defaultValue={transaction.category._id}
+          required
         >
           {categories.map((category) => (
             <option key={category._id} value={category._id}>
@@ -122,6 +130,7 @@ export default function FormEditTransaction() {
           id="description"
           name="description"
           defaultValue={transaction.description}
+          required
         />
 
         <label htmlFor="amount">Amount:</label>
@@ -130,6 +139,9 @@ export default function FormEditTransaction() {
           id="amount"
           name="amount"
           defaultValue={transaction.amount}
+          step="any" // hier Kommazahlen nur so (nicht "0.01")
+          min="0.01"
+          required
         />
 
         <label htmlFor="date">Date:</label>
@@ -138,6 +150,7 @@ export default function FormEditTransaction() {
           id="date"
           name="date"
           defaultValue={transaction.date.slice(0, 10)} // nimmt nur erste 10 Zeichen aus Datum-String: YYYY-MM-DD
+          required
         />
 
         <ButtonContainer>
@@ -150,6 +163,16 @@ export default function FormEditTransaction() {
           <button type="submit">Save</button>
         </ButtonContainer>
       </FormContainer>
+
+      <ConfirmModal
+        open={isConfirmOpen} // Modal offen, wenn isConfirmOpen = true
+        title="Delete transaction?"
+        message="Are you sure you want to delete this transaction? This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete} // Löschung erst bei confirm
+        onCancel={() => setIsConfirmOpen(false)} // Modal schließen über Cancel / Overlay / ESC
+      />
     </PageWrapper>
   );
 }

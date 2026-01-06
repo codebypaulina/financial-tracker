@@ -2,9 +2,10 @@ import useSWR from "swr";
 import { useRouter } from "next/router";
 import styled from "styled-components";
 
-export default function FormAddTransaction() {
+export default function FormAddTransaction({ onCancel }) {
+  // onCancel von AddingPage für cancel-button
   const router = useRouter();
-  const { category: categoryId } = router.query; //
+  const { category: categoryId, type: preselectedType } = router.query; //
 
   const { data: categories, error } = useSWR("/api/categories"); // für Dropdown, damit Kategorien zur Auswahl abgerufen werden
 
@@ -13,7 +14,9 @@ export default function FormAddTransaction() {
 
   // Cancel-Button
   function handleCancel() {
-    router.back(); // zurück zur vorherigen Seite (nochmal überdenken, ob er nicht lieber Formular clearen soll & zustätzl. X-Button dafür implemetieren)
+    if (onCancel)
+      onCancel(); // wenn onCancel von AddingPage übergeben wird, zurück zur selection view in AddingPage,
+    else router.back(); // ansonsten zurück zur vorherigen page (= CategoryDetailsPage)
   }
 
   // Save-Button
@@ -53,19 +56,37 @@ export default function FormAddTransaction() {
 
           <RadioRow>
             <RadioOption>
-              <input type="radio" id="income" name="type" value="Income" />
+              <input
+                type="radio"
+                id="income"
+                name="type"
+                value="Income"
+                defaultChecked={preselectedType === "Income"}
+                required // reicht nur bei der 1. Option für Fehlermeldung
+              />
               <label htmlFor="income">Income</label>
             </RadioOption>
 
             <RadioOption>
-              <input type="radio" id="expense" name="type" value="Expense" />
+              <input
+                type="radio"
+                id="expense"
+                name="type"
+                value="Expense"
+                defaultChecked={preselectedType === "Expense"}
+              />
               <label htmlFor="expense">Expense</label>
             </RadioOption>
           </RadioRow>
         </TypeGroup>
 
         <label htmlFor="category">Category:</label>
-        <select id="category" name="category" defaultValue={categoryId || ""}>
+        <select
+          id="category"
+          name="category"
+          defaultValue={categoryId || ""}
+          required
+        >
           <option value="">Select</option>
 
           {categories.map((category) => (
@@ -81,13 +102,22 @@ export default function FormAddTransaction() {
           id="description"
           name="description"
           placeholder=" ..."
+          required
         />
 
         <label htmlFor="amount">Amount:</label>
-        <input type="number" id="amount" name="amount" placeholder=" 0,00 €" />
+        <input
+          type="number"
+          id="amount"
+          name="amount"
+          placeholder=" 0,00 €"
+          step="any" // Kommazahlen; "any" statt "0.01", weils nur so in FormEditTransaction ging
+          min="0.01"
+          required
+        />
 
         <label htmlFor="date">Date:</label>
-        <input type="date" id="date" name="date" />
+        <input type="date" id="date" name="date" required />
 
         <ButtonContainer>
           <button type="button" onClick={handleCancel}>
