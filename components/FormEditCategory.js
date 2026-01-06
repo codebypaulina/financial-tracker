@@ -93,6 +93,7 @@ export default function FormEditCategory() {
                 name="type"
                 value="Income"
                 defaultChecked={category.type === "Income"}
+                required
               />
               <label htmlFor="income">Income</label>
             </RadioOption>
@@ -111,7 +112,13 @@ export default function FormEditCategory() {
         </TypeGroup>
 
         <label htmlFor="name">Name:</label>
-        <input type="text" id="name" name="name" defaultValue={category.name} />
+        <input
+          type="text"
+          id="name"
+          name="name"
+          defaultValue={category.name}
+          required
+        />
 
         <label htmlFor="color">Color:</label>
         <input
@@ -119,6 +126,7 @@ export default function FormEditCategory() {
           id="color"
           name="color"
           defaultValue={category.color}
+          required
         />
 
         <ButtonContainer>

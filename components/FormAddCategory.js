@@ -45,7 +45,13 @@ export default function FormAddCategory({ onCancel }) {
           <label htmlFor="type">Type:</label>
           <RadioRow>
             <RadioOption>
-              <input type="radio" id="income" name="type" value="Income" />
+              <input
+                type="radio"
+                id="income"
+                name="type"
+                value="Income"
+                required // reicht nur bei der 1. Option für Fehlermeldung
+              />
               <label htmlFor="income">Income</label>
             </RadioOption>
 
@@ -57,10 +63,16 @@ export default function FormAddCategory({ onCancel }) {
         </TypeGroup>
 
         <label htmlFor="name">Name:</label>
-        <input type="text" id="name" name="name" placeholder=" ..." />
+        <input type="text" id="name" name="name" placeholder=" ..." required />
 
         <label htmlFor="color">Color:</label>
-        <input type="color" id="color" name="color" defaultValue="#ffffff" />
+        <input
+          type="color"
+          id="color"
+          name="color"
+          defaultValue="#ffffff"
+          required
+        />
 
         <ButtonContainer>
           <button type="button" onClick={handleCancel}>
