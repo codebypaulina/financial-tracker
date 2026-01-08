@@ -33,17 +33,18 @@ export default function AddingPage() {
   return (
     <>
       {!selection && (
-        <PageWrapper>
-          <h1>
-            Do you want to add a{" "}
+        <>
+          <PageWrapper>
+            <h1>Add</h1>
+
             <button onClick={() => setSelection("transaction")}>
               transaction
-            </button>{" "}
-            or a{" "}
-            <button onClick={() => setSelection("category")}>category</button>?
-          </h1>
+            </button>
+            <p>or</p>
+            <button onClick={() => setSelection("category")}>category</button>
+          </PageWrapper>
           <Navbar />
-        </PageWrapper>
+        </>
       )}
 
       {selection === "transaction" && (
@@ -59,22 +60,35 @@ export default function AddingPage() {
 }
 
 const PageWrapper = styled.div`
-  min-height: 100vh; // Wrapper nimmt mind. volle Bildschirmhöhe ein
-  display: flex; // zentriert Inhalt
-  justify-content: center; // h1 horizontal zentriert
-  align-items: center; // h1 vertikal zentriert
-  padding: 2rem; // Abstand zum Bildschirmrand
+  height: calc(100vh - var(--navbar-height, 65px)); // wrapper wie viewport
+  display: flex; // wegen Zentrierung
+  flex-direction: column; // content untereinander
+  align-items: center; // content vertikal zentriert
+  justify-content: center; // content horizontal zentriert
+
+  h1 {
+    margin-bottom: 2rem;
+  }
+
+  p {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-text-color);
+    margin: 0.2rem 0 0.7rem 0;
+  }
 
   button {
     border: none;
     border-radius: 20px;
-    min-width: 90px;
-    min-height: 30px;
+    width: 115px;
+    height: 30px;
     cursor: pointer;
+    background-color: var(--secondary-text-color);
+    font-weight: bold;
+    font-size: 1rem;
 
     &:hover {
       transform: scale(1.07);
-      font-weight: bold;
     }
   }
 `;
