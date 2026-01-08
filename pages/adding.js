@@ -31,16 +31,19 @@ export default function AddingPage() {
   /********************************************************************************************************************************************************/
 
   return (
-    <PageWrapper>
+    <>
       {!selection && (
-        <h1>
-          Do you want to add a{" "}
-          <button onClick={() => setSelection("transaction")}>
-            transaction
-          </button>{" "}
-          or a{" "}
-          <button onClick={() => setSelection("category")}>category</button>?
-        </h1>
+        <PageWrapper>
+          <h1>
+            Do you want to add a{" "}
+            <button onClick={() => setSelection("transaction")}>
+              transaction
+            </button>{" "}
+            or a{" "}
+            <button onClick={() => setSelection("category")}>category</button>?
+          </h1>
+          <Navbar />
+        </PageWrapper>
       )}
 
       {selection === "transaction" && (
@@ -51,9 +54,7 @@ export default function AddingPage() {
       {selection === "category" && (
         <FormAddCategory onCancel={() => setSelection(null)} />
       )}
-
-      <Navbar />
-    </PageWrapper>
+    </>
   );
 }
 
