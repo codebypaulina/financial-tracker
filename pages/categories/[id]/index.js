@@ -2,6 +2,9 @@ import { useRouter } from "next/router";
 import useSWR from "swr";
 import styled from "styled-components";
 import Link from "next/link";
+import SettingsIcon from "/public/icons/settings.svg";
+import BackIcon from "/public/icons/back.svg";
+import AddIcon from "/public/icons/add.svg";
 
 export default function CategoryDetailsPage() {
   const router = useRouter();
@@ -21,48 +24,22 @@ export default function CategoryDetailsPage() {
   );
 
   return (
-    <PageWrapper>
-      <ContentContainer>
-        <h1>Category Details</h1> <h2>{category.name}</h2>
-        <button onClick={() => router.back()} className="back">
-          ←
-        </button>
-        {filteredTransactions.length === 0 ? (
-          <p className="no-ta">No transactions in this category yet.</p>
-        ) : (
-          <StyledList>
-            {filteredTransactions.map((transaction) => (
-              <li key={transaction._id}>
-                <StyledLink href={`/transactions/${transaction._id}`}>
-                  <p className="date">
-                    {new Date(transaction.date).toLocaleDateString("de-DE", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
-                  </p>
-                  <p className="description">{transaction.description}</p>
-                  <p className="amount">
-                    {transaction.amount.toLocaleString("de-DE", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
-                    €
-                  </p>
-                </StyledLink>
-              </li>
-            ))}
-          </StyledList>
-        )}
-        <button
-          onClick={() =>
-            router.push(`/adding?category=${id}&type=${category.type}`)
+    <ContentContainer>
+      <h1>Category Details</h1>
+
+      <CategoryContainer>
+        <ColorTag
+          color={
+            category.type === "Income"
+              ? "var(--income-color)"
+              : "var(--expense-color)"
           }
-          className="add"
-        >
-          Add Transaction
-        </button>
-        <button
+        />
+        <ColorTag color={category.color} />
+
+        <h2>{category.name}</h2>
+
+        <SettingsButton
           onClick={() =>
             router.push(
               `/categories/${id}/edit${
@@ -72,118 +49,170 @@ export default function CategoryDetailsPage() {
               // (ansonsten weiß in FormEditCategory nicht, ob davor auf pages/index.js oder pages/categories/index.js gewesen)
             )
           }
-          className="edit"
         >
-          Edit Category
-        </button>
-      </ContentContainer>
-    </PageWrapper>
+          <SettingsIcon />
+        </SettingsButton>
+      </CategoryContainer>
+
+      <BackButton onClick={() => router.back()}>
+        <BackIcon />
+      </BackButton>
+
+      {filteredTransactions.length === 0 ? (
+        <p className="no-transaction">No transactions in this category yet.</p>
+      ) : (
+        <ul>
+          {filteredTransactions.map((transaction) => (
+            <li key={transaction._id}>
+              <StyledLink href={`/transactions/${transaction._id}`}>
+                <p>
+                  {new Date(transaction.date).toLocaleDateString("de-DE", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })}
+                </p>
+
+                <p>{transaction.description}</p>
+
+                <p className="amount">
+                  {transaction.amount.toLocaleString("de-DE", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </p>
+              </StyledLink>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <AddButton
+        onClick={() =>
+          router.push(`/adding?category=${id}&type=${category.type}`)
+        }
+      >
+        {" "}
+        <AddIcon />
+      </AddButton>
+    </ContentContainer>
   );
 }
 
-const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column; // vertikal angeordnet
-  align-items: center; // ContentContainer vertikal zentriert
-  width: 100%;
-  height: 100vh; // gesamte Höhe von Viewport
-`;
-
 const ContentContainer = styled.div`
-  width: 100%;
-  max-width: 800px; // wegen list & buttons
-  margin: 0 auto; // content horizontal zentriert
-  display: flex;
-  flex-direction: column; // content untereinander
-  align-items: center; // content zentriert
-  padding: 70px 70px 75px 70px; // 75px: Nav
+  padding: 2rem; // Abstand Bildschirmrand
+  margin: 0 auto; // container mittig
+  max-width: 450px;
 
-  @media (max-width: 600px) {
-    padding: 70px 60px 75px 20px;
-  }
-
-  @media (max-width: 400px) {
-    padding: 70px 40px 75px 40px;
+  h1,
+  .no-transaction {
+    text-align: center;
   }
 
   h1 {
-    margin-bottom: 20px;
+    margin-bottom: 1rem;
   }
 
-  h2 {
-    align-self: center;
-  }
-
-  p.no-ta {
-    margin: 0 0 20px 0;
-  }
-
-  button {
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    width: 150px;
-    height: 40px;
-    margin: 10px 0;
-    padding: 5px 10px;
-    transition: transform 0.2s;
-
-    &:hover {
-      transform: scale(1.07);
-      font-weight: bold;
-    }
-  }
-
-  button.back {
-    background-color: var(--button-background-color);
-    color: var(--button-text-color);
-    align-self: flex-start;
-    width: 40px;
-    height: 30px;
-    margin: 0 0 20px 0;
-  }
-
-  button.add,
-  button.edit {
-    background-color: var(--button-text-color);
-    color: var(--button-background-color);
+  ul {
+    list-style: none;
   }
 `;
 
-const StyledList = styled.ul`
-  list-style-type: none;
-  width: 100%;
-  margin: 0 0 20px 0;
+const CategoryContainer = styled.div`
+  display: flex;
+  justify-content: center; // ColorTags + {category.name} zentriert
+  align-items: center; // ColorTags + {category.name} mittig in der Zeile
+  gap: 0.5rem;
+`;
+
+const ColorTag = styled.span`
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%; // rund
+  background-color: ${(props) => props.color};
+`;
+
+const SettingsButton = styled.button`
+  border: none;
+  width: 25px;
+  height: 25px;
+  cursor: pointer;
+  background: transparent;
+
+  display: flex; // SettingsIcon zentriert & mittig
+  justify-content: center;
+  align-items: center;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    color: var(--secondary-text-color);
+  }
+
+  &:hover {
+    transform: scale(1.07);
+  }
+`;
+
+const BackButton = styled.button`
+  border: none;
+  border-radius: 10px;
+  width: 26px;
+  height: 19px;
+  cursor: pointer;
+  background-color: var(--secondary-text-color);
+  margin-bottom: 1rem; // Abstand zur list / no-transaction
+
+  display: flex; // BackIcon zentriert & mittig
+  justify-content: center;
+  align-items: center;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    color: "var(--background-color)";
+  }
+
+  &:hover {
+    transform: scale(1.07);
+  }
+`;
+
+const AddButton = styled.button`
+  border: none;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  background: transparent;
+
+  display: block; // wegen Zentrierung
+  margin: 1rem auto 0; // Abstand zur list / no-transaction + zentriert
+
+  svg {
+    width: 26px;
+    height: 26px;
+    color: var(--secondary-text-color);
+  }
+
+  &:hover {
+    transform: scale(1.07);
+  }
 `;
 
 const StyledLink = styled(Link)`
   text-decoration: none;
-  color: var(--secondary-text-color);
-  margin-bottom: 10px;
-
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-
-  &:hover {
-    font-weight: bold;
-  }
-
-  .date {
-    flex: 1;
-    text-align: left;
-  }
-
-  .description {
-    flex: 2;
-    text-align: left;
-    margin-left: 10px;
-    // max-width: 100px;
-  }
+  display: grid; //      date | description | amount
+  grid-template-columns: 70px 1fr auto;
+  gap: 1rem;
+  padding-bottom: 0.2rem; // Abstand zw. Zeilen
 
   .amount {
-    flex: 1;
-    text-align: right;
+    white-space: nowrap; // kein Umbruch
+  }
+
+  &:hover {
     font-weight: bold;
   }
 `;

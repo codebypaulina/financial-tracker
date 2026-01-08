@@ -18,6 +18,8 @@ export default createGlobalStyle`
     --list-item-background: #323232;
     
     --base-font-size: 16px; // Basis mobile Geräte
+
+    --navbar-height: 65px;
   }
 
   *, *::before, *::after {
