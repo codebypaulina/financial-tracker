@@ -1,60 +1,65 @@
 "use client"; // ganz oben!
-import { useState, useEffect } from "react"; // useState für selection; useEffect, um selection automatisch vorauszuwählen, wenn query vorhanden
-import { useRouter } from "next/router"; // um query-Parameter aus URL zu lesen
+import { useState, useEffect } from "react"; // useState für selection; useEffect für preselection per query
+import { useRouter } from "next/router"; // für preselection per query: um query-param "category" aus URL zu lesen (wenn von CategoryDetailsPage kommend)
 
 import Navbar from "@/components/Navbar";
 import FormAddTransaction from "@/components/FormAddTransaction";
 import FormAddCategory from "@/components/FormAddCategory";
 import styled from "styled-components";
 
-export default function AddingPage() {
-  const [selection, setSelection] = useState(null); // rendering von FormAddTransaction oder FormAddCategory basierend auf Auswahl
-
-  /********* preselection per query + cancel-button *******************************************************************************************************
-   
+/******************* [ preselection per query + cancel-button ] *****************************************************************************
   A: AddingPage -> selection view -> button "transaction" -> FormAddTransaction -> button "Cancel" -> zurück zu selection view auf AddingPage
-  B: CategoryDetailsPage -> button "Add Transaction" -> FormAddTransaction -> button "Cancel" -> zurück zu CategoryDetailsPage                           */
+  B: CategoryDetailsPage -> button "Add Transaction" -> FormAddTransaction -> button "Cancel" -> zurück zu CategoryDetailsPage                           
+/********************************************************************************************************************************************/
+
+export default function AddingPage() {
+  const [selection, setSelection] = useState(null); // rendering von FormAddTransaction ODER FormAddCategory basierend auf selection
 
   const router = useRouter(); // Zugriff auf router.query
-  const hasCategoryQuery = Boolean(router.query.category); // Zugriff auf query-Parameter "category" aus URL (zB /adding?category=123) (deep-link-Indikator)
-  // boolean = false (undefined, null, leer) / true
-  // hasCategoryQuery = true, wenn category-query-Parameter existiert, ansonsten hasCategoryQuery = false
+  const hasCategoryQuery = Boolean(router.query.category); // Zugriff auf query-param "category" aus URL (zB /adding?category=123 -> deep-link von CategoryDetailsPage)
+  /* boolean = false (undefined, null, leer) / true
+     hasCategoryQuery = true, wenn "category"-param existiert, ansonsten hasCategoryQuery = false */
+  const resetSelection = () => setSelection(null); // für onCancel = zurück zu selection view
 
-  // automatische Vorauswahl basierend auf URL:
+  // "transaction"-preselection per query, wenn von CategoryDetailsPage kommend:
   useEffect(() => {
-    if (hasCategoryQuery) {
-      // wenn category-Parameter existiert (hasCategoryQuery = true),
+    if (hasCategoryQuery && !selection) {
+      // wenn category-query existiert (hasCategoryQuery = true) && keine selection,
       setSelection("transaction"); // dann direkt FormAddTransaction rendern statt selection view
     }
-  }, [hasCategoryQuery]); // effect läuft, sobald hasCategoryQuery von false auf true geht
+  }, [hasCategoryQuery, selection]);
 
-  /********************************************************************************************************************************************************/
+  /********************************************************************************************************************************************/
 
+  // FormAddTransaction:
+  // selection view -> button "transaction" -> FormAddTransaction
+  // onCancel: wenn hasCategoryQuery = true, dann onCancel = undefined (zurück zu CategoryDetailsPage); ansonsten resettet selection (zurück zu selection view)
+  if (selection === "transaction") {
+    return (
+      <FormAddTransaction
+        onCancel={hasCategoryQuery ? undefined : resetSelection}
+      />
+    );
+  }
+
+  // FormAddCategory:
+  // selection view -> button "category" -> FormAddCategory
+  // onCancel: resettet selection = null (= zurück zu selection view)
+  if (selection === "category") {
+    return <FormAddCategory onCancel={resetSelection} />;
+  }
+
+  // default: selection view
   return (
     <>
-      {!selection && (
-        <>
-          <PageWrapper>
-            <h1>Add</h1>
+      <PageWrapper>
+        <h1>Add</h1>
 
-            <button onClick={() => setSelection("transaction")}>
-              transaction
-            </button>
-            <p>or</p>
-            <button onClick={() => setSelection("category")}>category</button>
-          </PageWrapper>
-          <Navbar />
-        </>
-      )}
-
-      {selection === "transaction" && (
-        <FormAddTransaction
-          onCancel={hasCategoryQuery ? undefined : () => setSelection(null)}
-        /> // wenn hasCategoryQuery = true, dann onCancel = undefined; ansonsten setzt onCancel selection = null (= zurück zur selection view)
-      )}
-      {selection === "category" && (
-        <FormAddCategory onCancel={() => setSelection(null)} />
-      )}
+        <button onClick={() => setSelection("transaction")}>transaction</button>
+        <p>or</p>
+        <button onClick={() => setSelection("category")}>category</button>
+      </PageWrapper>
+      <Navbar />
     </>
   );
 }
