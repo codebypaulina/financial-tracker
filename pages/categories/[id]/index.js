@@ -2,7 +2,7 @@ import { useRouter } from "next/router";
 import useSWR from "swr";
 import styled from "styled-components";
 import Link from "next/link";
-import EditIcon from "/public/icons/edit.svg";
+import SettingsIcon from "/public/icons/settings.svg";
 import BackIcon from "/public/icons/back.svg";
 import AddIcon from "/public/icons/add.svg";
 
@@ -39,7 +39,7 @@ export default function CategoryDetailsPage() {
 
         <h2>{category.name}</h2>
 
-        <EditButton
+        <SettingsButton
           onClick={() =>
             router.push(
               `/categories/${id}/edit${
@@ -50,8 +50,8 @@ export default function CategoryDetailsPage() {
             )
           }
         >
-          <EditIcon />
-        </EditButton>
+          <SettingsIcon />
+        </SettingsButton>
       </CategoryContainer>
 
       <BackButton onClick={() => router.back()}>
@@ -134,20 +134,21 @@ const ColorTag = styled.span`
   background-color: ${(props) => props.color};
 `;
 
-const EditButton = styled.button`
+const SettingsButton = styled.button`
   border: none;
-  border-radius: 15px;
-  width: 30px;
-  height: 30px;
+  width: 25px;
+  height: 25px;
   cursor: pointer;
+  background: transparent;
 
-  display: flex; // EditIcon zentriert & mittig
+  display: flex; // SettingsIcon zentriert & mittig
   justify-content: center;
   align-items: center;
 
   svg {
     width: 20px;
     height: 20px;
+    color: var(--secondary-text-color);
   }
 
   &:hover {
@@ -157,10 +158,11 @@ const EditButton = styled.button`
 
 const BackButton = styled.button`
   border: none;
-  border-radius: 15px;
-  width: 30px;
-  height: 20px;
+  border-radius: 10px;
+  width: 26px;
+  height: 19px;
   cursor: pointer;
+  background-color: var(--secondary-text-color);
   margin-bottom: 1rem; // Abstand zur list / no-transaction
 
   display: flex; // BackIcon zentriert & mittig
@@ -168,8 +170,9 @@ const BackButton = styled.button`
   align-items: center;
 
   svg {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
+    color: "var(--background-color)";
   }
 
   &:hover {
@@ -179,19 +182,22 @@ const BackButton = styled.button`
 
 const AddButton = styled.button`
   border: none;
-  min-width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   cursor: pointer;
-  display: block; // wegen Zentrierung
-  margin: 1rem auto 0; // Abstand zur list / no-transaction + zentriert
   background: transparent;
 
+  display: block; // wegen Zentrierung
+  margin: 1rem auto 0; // Abstand zur list / no-transaction + zentriert
+
   svg {
-    fill: #ffffff;
+    width: 26px;
+    height: 26px;
+    color: var(--secondary-text-color);
   }
 
   &:hover {
-    transform: scale(1.1);
+    transform: scale(1.07);
   }
 `;
 
