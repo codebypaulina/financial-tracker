@@ -4,12 +4,12 @@ import styled from "styled-components";
 export default function FormAddCategory({ onCancel }) {
   const router = useRouter();
 
-  // Cancel-Button
+  // cancel-button
   function handleCancel() {
-    onCancel(); // zurück zur Frage in AddingPage
+    onCancel(); // zurück zu AddingPage (selection view)
   }
 
-  // Save-Button
+  // save-button
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -26,10 +26,12 @@ export default function FormAddCategory({ onCancel }) {
       });
 
       if (response.ok) {
-        console.log("ADDING SUCCESSFULL! (category)");
-        router.back(); // nach erfolgreichem Hinzufügen neuer Kategorie zurück zur vorherigen Seite
+        console.log("ADDING SUCCESSFUL! (category)");
+        router.back(); // nach erfolgreichem Hinzufügen neuer category zurück zur vorherigen page
       } else {
-        throw new Error("Failed to add new category");
+        throw new Error(
+          `Failed to add new category (status: ${response.status})`
+        );
       }
     } catch (error) {
       console.error("Error adding new category: ", error);
@@ -45,6 +47,7 @@ export default function FormAddCategory({ onCancel }) {
           <label htmlFor="type" className="label-type">
             Type:
           </label>
+
           <RadioRow>
             <RadioOption>
               <input
@@ -52,7 +55,7 @@ export default function FormAddCategory({ onCancel }) {
                 id="income"
                 name="type"
                 value="Income"
-                required // reicht nur bei der 1. Option für Fehlermeldung
+                required
               />
               <label htmlFor="income">Income</label>
             </RadioOption>
