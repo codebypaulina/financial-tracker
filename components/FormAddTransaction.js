@@ -1,16 +1,67 @@
 import useSWR from "swr";
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react"; // damit category-Auswahl category-type automatisch steuern kann
 import styled from "styled-components";
+
+/******************** [ Auswahl category(-ID) + category-type ] *********************************************************************************
+  Fall A (preselection: URL enthält query-params):
+  CategoryDetailsPage -> FormAddTransaction: category & type aus URL
+
+  Fall B (keine preselection: URL ohne query):
+  AddingPage -> FormAddTransaction: category & type leer
+
+  Fall C (dropdown):
+  Fall C1: Auswahl "Select" (= category-ID leer): type wieder unselected
+  Fall C2: Auswahl category (= category-ID vorhanden): type automatisch passend
+
+  Fall D (manuell):
+  -> manuelle Auswahl von type: nur solange keine category ausgewählt ist
+  -> sobald Auswahl von category: Fall C
+  *******************************************************************************************************************************************/
 
 export default function FormAddTransaction({ onCancel }) {
   // onCancel von AddingPage für cancel-button
   const router = useRouter();
-  const { category: categoryId, type: preselectedType } = router.query; //
+  const { category: categoryId, type: preselectedType } = router.query; // für preselection (Fall A)
 
-  const { data: categories, error } = useSWR("/api/categories"); // für Dropdown, damit Kategorien zur Auswahl abgerufen werden
+  const { data: categories, error } = useSWR("/api/categories"); // für dropdown, um categories abzurufen
 
-  if (error) return <div>Failed to load categories</div>;
-  if (!categories) return <div>Loading...</div>;
+  // *******************************************************************************************************************************************
+  // states für category(-ID) + category-type:
+  const [selectedCategoryId, setSelectedCategoryId] = useState(""); // aktuell gewählte category im dropdown
+  const [selectedType, setSelectedType] = useState(""); // aktuell gewählter type
+
+  // Fall A + B:
+  useEffect(() => {
+    if (!router.isReady) return; // wartet bis query-params bereitstehen, damit nicht zu früh leere Werte an form
+
+    setSelectedCategoryId(categoryId || ""); // category-ID aus URL (Fall A) oder leer (Fall B)
+    setSelectedType(preselectedType || ""); // type aus URL (Fall A) oder leer (Fall B)
+  }, [router.isReady, categoryId, preselectedType]); // wenn query verfügbar / aktualisiert wird
+
+  // Fall C:
+  useEffect(() => {
+    if (!categories) return; // falls categories noch nicht geladen
+
+    // Fall C1:
+    if (!selectedCategoryId) {
+      // wenn keine category-ID,
+      setSelectedType(""); // dann type leer
+      return;
+    }
+
+    // Fall C2:
+    const selectedCategory = categories.find(
+      (category) => category._id === selectedCategoryId // sucht category-object mit ausgewählter category(-ID)
+    );
+
+    if (selectedCategory) {
+      // wenn category-object gefunden,
+      setSelectedType(selectedCategory.type); // dann type aus category-object
+    }
+  }, [selectedCategoryId, categories]); // bei category-Wechsel / wenn categories (neu) geladen werden
+
+  // *******************************************************************************************************************************************
 
   // Cancel-Button
   function handleCancel() {
@@ -63,8 +114,12 @@ export default function FormAddTransaction({ onCancel }) {
                 id="income"
                 name="type"
                 value="Income"
-                defaultChecked={preselectedType === "Income"}
-                required // reicht nur bei der 1. Option für Fehlermeldung
+                checked={selectedType === "Income"} // immer aktueller type-state (selectedType)
+                // Fall D:
+                onChange={() => {
+                  if (!selectedCategoryId) setSelectedType("Income"); // wenn category-state leer, manuelle Income-Auswahl
+                }}
+                required
               />
               <label htmlFor="income">Income</label>
             </RadioOption>
@@ -75,7 +130,11 @@ export default function FormAddTransaction({ onCancel }) {
                 id="expense"
                 name="type"
                 value="Expense"
-                defaultChecked={preselectedType === "Expense"}
+                checked={selectedType === "Expense"} // immer aktueller type-state (selectedType)
+                // Fall D:
+                onChange={() => {
+                  if (!selectedCategoryId) setSelectedType("Expense"); // wenn category-state leer, manuelle Expense-Auswahl
+                }}
               />
               <label htmlFor="expense">Expense</label>
             </RadioOption>
@@ -86,7 +145,9 @@ export default function FormAddTransaction({ onCancel }) {
         <select
           id="category"
           name="category"
-          defaultValue={categoryId || ""}
+          value={selectedCategoryId} // immer aktueller category-state (selectedCategoryId)
+          // Fall C:
+          onChange={(event) => setSelectedCategoryId(event.target.value)} // bei Auswahl wird category-state gesetzt
           required
         >
           <option value="">Select</option>
