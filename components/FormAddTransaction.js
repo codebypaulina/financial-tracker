@@ -1,80 +1,80 @@
 import useSWR from "swr";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react"; // damit category-Auswahl category-type automatisch steuern kann
+import { useEffect, useState } from "react"; // für: category-Auswahl -> automatische type-Auswahl
 import styled from "styled-components";
 
-/******************** [ Auswahl category(-ID) + category-type ] *********************************************************************************
+/*** [ Auswahl category(-ID) + category-type ]**************************************************************************
+ 
   Fall A (preselection: URL enthält query-params):
   CategoryDetailsPage -> FormAddTransaction: category & type aus URL
 
   Fall B (keine preselection: URL ohne query):
   AddingPage -> FormAddTransaction: category & type leer
 
-  Fall C (dropdown):
+  Fall C (manuelle category-Auswahl):
   Fall C1: Auswahl "Select" (= category-ID leer): type wieder unselected
   Fall C2: Auswahl category (= category-ID vorhanden): type automatisch passend
 
-  Fall D (manuell):
-  -> manuelle Auswahl von type: nur solange keine category ausgewählt ist
+  Fall D (manuelle type-Auswahl):
+  -> nur solange keine category ausgewählt ist
   -> sobald Auswahl von category: Fall C
-  *******************************************************************************************************************************************/
+
+  ***********************************************************************************************************************/
 
 export default function FormAddTransaction({ onCancel }) {
   // onCancel von AddingPage für cancel-button
   const router = useRouter();
-  const { category: categoryId, type: preselectedType } = router.query; // für preselection (Fall A)
+  const { category: queryCategoryId, type: queryType } = router.query; // für preselection (Fall A)
 
-  const { data: categories, error } = useSWR("/api/categories"); // für dropdown, um categories abzurufen
+  const { data: allCategories, error } = useSWR("/api/categories"); // für dropdown, um categories abzurufen
 
-  // *******************************************************************************************************************************************
+  // *********************************************************************************************************************
   // states für category(-ID) + category-type:
   const [selectedCategoryId, setSelectedCategoryId] = useState(""); // aktuell gewählte category im dropdown
   const [selectedType, setSelectedType] = useState(""); // aktuell gewählter type
 
   // Fall A + B:
   useEffect(() => {
-    if (!router.isReady) return; // wartet bis query-params bereitstehen, damit nicht zu früh leere Werte an form
+    if (!router.isReady) return; // falls router noch nicht rdy (keine query-params)
 
-    setSelectedCategoryId(categoryId || ""); // category-ID aus URL (Fall A) oder leer (Fall B)
-    setSelectedType(preselectedType || ""); // type aus URL (Fall A) oder leer (Fall B)
-  }, [router.isReady, categoryId, preselectedType]); // wenn query verfügbar / aktualisiert wird
+    setSelectedCategoryId(queryCategoryId || ""); // category-ID aus URL (Fall A) oder leer (Fall B)
+    setSelectedType(queryType || ""); // type aus URL (Fall A) oder leer (Fall B)
+  }, [router.isReady, queryCategoryId, queryType]); // wenn query verfügbar / aktualisiert wird
 
   // Fall C:
   useEffect(() => {
-    if (!categories) return; // falls categories noch nicht geladen
+    if (!allCategories) return; // falls categories noch nicht geladen
 
-    // Fall C1:
+    // Fall C1: wenn keine category-ID, dann type leer
     if (!selectedCategoryId) {
-      // wenn keine category-ID,
-      setSelectedType(""); // dann type leer
+      setSelectedType("");
       return;
     }
 
     // Fall C2:
-    const selectedCategory = categories.find(
+    const selectedCategory = allCategories.find(
       (category) => category._id === selectedCategoryId // sucht category-object mit ausgewählter category(-ID)
     );
 
+    // wenn category-object gefunden, dann type aus category-object
     if (selectedCategory) {
-      // wenn category-object gefunden,
-      setSelectedType(selectedCategory.type); // dann type aus category-object
+      setSelectedType(selectedCategory.type);
     }
-  }, [selectedCategoryId, categories]); // bei category-Wechsel / wenn categories (neu) geladen werden
+  }, [selectedCategoryId, allCategories]); // bei category-Wechsel / wenn categories (neu) geladen werden
 
-  // *******************************************************************************************************************************************
+  // *********************************************************************************************************************
 
   // verhindert Laufzeitfehler bis categories über SWR abgerufen werden:
   if (error) return <h3>Failed to load data</h3>;
-  if (!categories) return <h3>Loading ...</h3>;
+  if (!allCategories) return <h3>Loading ...</h3>;
 
-  // Cancel-Button
+  // cancel-button:
+  // wenn onCancel von AddingPage übergeben wird, dann dorthin zurück (selection view), sonst zurück zu CategoryDetailsPage
   function handleCancel() {
-    if (onCancel)
-      onCancel(); // wenn onCancel von AddingPage übergeben wird, zurück zur selection view in AddingPage,
-    else router.back(); // ansonsten zurück zur vorherigen page (= CategoryDetailsPage)
+    return onCancel ? onCancel() : router.back();
   }
 
-  // Save-Button
+  // save-button
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -91,14 +91,21 @@ export default function FormAddTransaction({ onCancel }) {
       });
 
       if (response.ok) {
-        console.log("ADDING SUCCESSFULL! (transaction)");
-        router.back(); // nach erfolgreichem Hinzufügen neuer Transaktion zurück zur vorherigen Seite
+        console.log("ADDING SUCCESSFUL! (transaction)");
+        router.back(); // nach erfolgreichem Hinzufügen neuer transaction zurück zur vorherigen page
       } else {
-        throw new Error("Failed to add new transaction");
+        throw new Error(
+          `Failed to add new transaction (status: ${response.status})`
+        );
       }
     } catch (error) {
       console.error("Error adding new transaction: ", error);
     }
+  }
+
+  // Fall D: type-radio
+  function handleTypeSelect(type) {
+    if (!selectedCategoryId) setSelectedType(type); // wenn category-state leer, manuelle type-Auswahl
   }
 
   return (
@@ -119,10 +126,7 @@ export default function FormAddTransaction({ onCancel }) {
                 name="type"
                 value="Income"
                 checked={selectedType === "Income"} // immer aktueller type-state (selectedType)
-                // Fall D:
-                onChange={() => {
-                  if (!selectedCategoryId) setSelectedType("Income"); // wenn category-state leer, manuelle Income-Auswahl
-                }}
+                onChange={() => handleTypeSelect("Income")} // Fall D
                 required
               />
               <label htmlFor="income">Income</label>
@@ -135,10 +139,7 @@ export default function FormAddTransaction({ onCancel }) {
                 name="type"
                 value="Expense"
                 checked={selectedType === "Expense"} // immer aktueller type-state (selectedType)
-                // Fall D:
-                onChange={() => {
-                  if (!selectedCategoryId) setSelectedType("Expense"); // wenn category-state leer, manuelle Expense-Auswahl
-                }}
+                onChange={() => handleTypeSelect("Expense")} // Fall D
               />
               <label htmlFor="expense">Expense</label>
             </RadioOption>
@@ -150,13 +151,12 @@ export default function FormAddTransaction({ onCancel }) {
           id="category"
           name="category"
           value={selectedCategoryId} // immer aktueller category-state (selectedCategoryId)
-          // Fall C:
-          onChange={(event) => setSelectedCategoryId(event.target.value)} // bei Auswahl wird category-state gesetzt
+          onChange={(event) => setSelectedCategoryId(event.target.value)} // Fall C: bei Auswahl wird category-state gesetzt
           required
         >
           <option value="">Select</option>
 
-          {categories.map((category) => (
+          {allCategories.map((category) => (
             <option key={category._id} value={category._id}>
               {category.name}
             </option>
@@ -229,7 +229,6 @@ const FormContainer = styled.form`
   input[type="text"],
   input[type="number"],
   input[type="date"] {
-    cursor: pointer;
     margin-bottom: 0.8rem; // Abstand zw. Blöcken
     border-radius: 0.5rem; // abgerundete Ecken
     border: 0.07rem solid var(--button-hover-color);
@@ -239,8 +238,13 @@ const FormContainer = styled.form`
     accent-color: var(--button-hover-color);
   }
 
+  select {
+    cursor: pointer;
+  }
+
   input[type="date"] {
     margin-bottom: 0; // letztes input-Feld kein Abstand zu ButtonContainer
+    cursor: text;
   }
 `;
 
@@ -289,10 +293,10 @@ const RadioOption = styled.div`
     margin-right: 0.35rem; // Abstand zw. radio & label
   }
 
-  #income {
+  input#income {
     accent-color: var(--income-color);
   }
-  #expense {
+  input#expense {
     accent-color: var(--expense-color);
   }
 
