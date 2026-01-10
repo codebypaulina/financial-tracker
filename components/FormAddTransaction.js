@@ -63,6 +63,10 @@ export default function FormAddTransaction({ onCancel }) {
 
   // *******************************************************************************************************************************************
 
+  // verhindert Laufzeitfehler bis categories über SWR abgerufen werden:
+  if (error) return <h3>Failed to load data</h3>;
+  if (!categories) return <h3>Loading ...</h3>;
+
   // Cancel-Button
   function handleCancel() {
     if (onCancel)
