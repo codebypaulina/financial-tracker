@@ -1,7 +1,7 @@
 import useSWR from "swr";
 import { useRouter } from "next/router";
 import styled from "styled-components";
-import { useState } from "react"; // state für ConfirmModal open/!open
+import { useEffect, useState } from "react"; // effect + state: category-Änderung -> type-Änderung // state: ConfirmModal open/!open
 import ConfirmModal from "./ConfirmModal";
 
 export default function FormEditTransaction() {
@@ -15,6 +15,28 @@ export default function FormEditTransaction() {
   ); // transaction abrufen
   const { data: categories, error: errorCategories } =
     useSWR("/api/categories"); // für Dropdown, damit Kategorien zur Auswahl abgerufen werden
+
+  /*** [ type-Änderung ] *************************************************************************************************
+    -> manuell: nicht möglich
+    -> dropdown: category-Änderung -> ggf. type-Änderung (transaction-type = category-type)                             */
+
+  // state für aktuelle category(-ID) im dropdown
+  const [currentCategoryId, setCurrentCategoryId] = useState("");
+
+  // default: category(-ID) aus geladener transaction übernehmen
+  useEffect(() => {
+    if (!transaction) return; // falls transaction noch nicht geladen
+    setCurrentCategoryId(transaction.category?._id || "");
+  }, [transaction]);
+
+  // um type immer aus aktuell gewählter category abzuleiten
+  const selectedCategory = categories.find(
+    (category) => category._id === currentCategoryId
+  );
+
+  const typeFromSelectedCategory = selectedCategory?.type || "";
+
+  // *******************************************************************************************************************
 
   if (errorTransaction || errorCategories) return <h3>Failed to load data</h3>;
   if (!transaction || !categories) return <h3>Loading...</h3>;
@@ -93,7 +115,7 @@ export default function FormEditTransaction() {
                 id="income"
                 name="type"
                 value="Income"
-                defaultChecked={transaction.type === "Income"}
+                checked={typeFromSelectedCategory === "Income"}
                 required
               />
               <label htmlFor="income">Income</label>
@@ -105,7 +127,7 @@ export default function FormEditTransaction() {
                 id="expense"
                 name="type"
                 value="Expense"
-                defaultChecked={transaction.type === "Expense"}
+                checked={typeFromSelectedCategory === "Expense"}
               />
               <label htmlFor="expense">Expense</label>
             </RadioOption>
@@ -116,7 +138,8 @@ export default function FormEditTransaction() {
         <select
           id="category"
           name="category"
-          defaultValue={transaction.category._id}
+          value={currentCategoryId} // immer aktueller category-state
+          onChange={(event) => setCurrentCategoryId(event.target.value)} // bei Änderung wird state gesetzt
           required
         >
           {categories.map((category) => (
@@ -270,11 +293,6 @@ const RadioRow = styled.div`
 `;
 
 const RadioOption = styled.div`
-  input {
-    cursor: pointer;
-    margin-right: 0.35rem; // Abstand zw. radio & label
-  }
-
   input#income {
     accent-color: var(--income-color);
   }
@@ -283,7 +301,7 @@ const RadioOption = styled.div`
   }
 
   label {
-    cursor: pointer;
+    margin-left: 0.35rem; // Abstand zw. radio & label
     font-size: 0.9rem;
     font-weight: normal;
   }
