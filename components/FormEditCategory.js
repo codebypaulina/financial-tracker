@@ -1,26 +1,26 @@
 import useSWR from "swr";
 import { useRouter } from "next/router";
-import styled from "styled-components";
 import { useState } from "react"; // state für ConfirmModal open/!open
+import styled from "styled-components";
 import ConfirmModal from "./ConfirmModal";
 
 export default function FormEditCategory() {
   const router = useRouter();
-  const { id, from } = router.query; // ID der entspr. category aus URL extrahiert // "from" auslesen für back navigation nach delete von category
+  const { id, from } = router.query; // ID der entspr. category aus URL // from: für back navigation nach category-delete
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false); // für ConfirmModal: steuert, ob Modal angezeigt wird
 
   const { data: category, error } = useSWR(id ? `/api/categories/${id}` : null); // category abrufen
 
   if (error) return <h3>Failed to load category</h3>;
-  if (!category) return <h3>Loading...</h3>;
+  if (!category) return <h3>Loading ...</h3>;
 
-  // Cancel-Button
+  // cancel-button
   function handleCancel() {
     router.back(); // zurück zur vorherigen Seite (nochmal überdenken, ob er nicht lieber Formular clearen soll & zustätzl. X-Button dafür implemetieren)
   }
 
-  // Save-Button
+  // save-button
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -38,43 +38,49 @@ export default function FormEditCategory() {
 
       if (response.ok) {
         console.log("UPDATING SUCCESSFUL! (category)");
-        router.back(); // nach erfolgreichem Updaten der Kategorie zurück zur vorherigen Seite
+        router.back(); // zurück zur vorherigen page
       } else {
-        throw new Error("Failed to update category");
+        throw new Error(
+          `Failed to update category (status: ${response.status})`
+        );
       }
     } catch (error) {
       console.error("Error updating category: ", error);
     }
   }
 
-  // 1. delete button: öffnet ConfirmModal, statt direkt Löschung
+  // 1. delete-button: öffnet ConfirmModal
   async function handleDelete() {
     setIsConfirmOpen(true);
   }
 
-  // 2. delete confirm: nach ConfirmModal Löschung
+  // 2. delete-confirm: nach ConfirmModal Löschung
   async function handleConfirmDelete() {
-    const hasTransactions = category.transactionCount > 0; // entscheidet mit transactionCount aus API zw. Fall A (leere ca) / B (ca + zugehörige ta)
+    // entscheidet mit transactionCount aus API zw. Fall A (leere ca) / B (ca + zugehörige ta)
+    const hasTransactions = category.transactionCount > 0;
 
     try {
+      // wählt endpoint-URL abhängig davon, ob cascade-delete nötig
       const url = hasTransactions
         ? `/api/categories/${id}?cascade=true`
-        : `/api/categories/${id}`; // wählt endpoint-URL abhängig davon, ob cascade-delete nötig
+        : `/api/categories/${id}`;
 
       const response = await fetch(url, {
         method: "DELETE",
       });
 
-      if (!response.ok) throw new Error("Failed to delete category");
-
-      setIsConfirmOpen(false); // Modal schließen nach erfolgreichem delete
-
-      console.log("DELETING SUCCESSFUL! (category)");
-
-      router.push(from || "/categories"); // wenn from existiert, dann nach delete dahin zurück, sonst fallback zu CategoriesPage (anstatt router.back() zur gelöschten CategoryDetailsPage)
+      if (response.ok) {
+        console.log("DELETING SUCCESSFUL! (category)");
+        setIsConfirmOpen(false); //  Modal schließen
+        router.push(from || "/categories"); // zurück zu from (CategoryDetailsPage), sonst zu CategoriesPage
+      } else {
+        throw new Error(
+          `Failed to delete category (status: ${response.status})`
+        );
+      }
     } catch (error) {
       console.error("Error deleting category: ", error);
-      setIsConfirmOpen(false); // Modal bei error schließen, damit user nicht festhängt
+      setIsConfirmOpen(false); // Modal schließen, damit user nicht festhängt
     }
   }
 
@@ -144,7 +150,7 @@ export default function FormEditCategory() {
       </FormContainer>
 
       <ConfirmModal
-        open={isConfirmOpen} // Modal offen, wenn isConfirmOpen = true
+        open={isConfirmOpen} // immer aktueller state
         title={
           category.transactionCount > 0
             ? "Delete category & transactions?"
@@ -157,8 +163,8 @@ export default function FormEditCategory() {
         }
         confirmLabel="Delete"
         cancelLabel="Cancel"
-        onConfirm={handleConfirmDelete} // Löschung erst bei confirm
-        onCancel={() => setIsConfirmOpen(false)} // Modal schließen über Cancel / Overlay / ESC
+        onConfirm={handleConfirmDelete} // category löschen
+        onCancel={() => setIsConfirmOpen(false)} // schließen (Cancel / ESC / Overlay)
       />
     </PageWrapper>
   );
@@ -261,6 +267,10 @@ const RadioRow = styled.div`
 `;
 
 const RadioOption = styled.div`
+  input {
+    cursor: pointer;
+  }
+
   input#income {
     accent-color: var(--income-color);
   }
@@ -269,6 +279,7 @@ const RadioOption = styled.div`
   }
 
   label {
+    cursor: pointer;
     margin-left: 0.35rem; // Abstand zw. radio & label
     font-size: 0.9rem;
     font-weight: normal;
