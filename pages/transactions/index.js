@@ -152,7 +152,7 @@ export default function TransactionsPage() {
     );
 
   return (
-    <PageWrapper>
+    <>
       <ContentContainer>
         <h1>Transactions</h1>
 
@@ -182,45 +182,50 @@ export default function TransactionsPage() {
           </ChartContainer>
         )}
 
-        <BalanceContainer>
-          <p>{totalBalanceLabel}</p>
-          <p className="value">
-            {totalBalanceValue.toLocaleString("de-DE", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{" "}
-            €
-          </p>
-        </BalanceContainer>
+        <Wrapper>
+          <BalanceContainer>
+            <p>{totalBalanceLabel}</p>
+            <p className="value">
+              {totalBalanceValue.toLocaleString("de-DE", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}{" "}
+              €
+            </p>
+          </BalanceContainer>
 
-        <ButtonContainer>
-          <IconWrapper
-            onClick={toggleDateFilterPopup}
-            className={
-              (filterDate.from !== earliestDate ||
-                filterDate.to !== latestDate) &&
-              filterDate.from &&
-              filterDate.to
-                ? "active"
-                : ""
-            }
-          >
-            <DateFilterIcon />
-          </IconWrapper>
+          <FilterContainer>
+            <IconWrapper
+              onClick={toggleDateFilterPopup}
+              className={
+                (filterDate.from !== earliestDate ||
+                  filterDate.to !== latestDate) &&
+                filterDate.from &&
+                filterDate.to
+                  ? "active"
+                  : ""
+              }
+            >
+              <DateFilterIcon />
+            </IconWrapper>
 
-          <button
-            onClick={() => toggleTypeFilter("Income")}
-            className={filterType === "Income" ? "active" : "incomes"}
-          >
-            Incomes
-          </button>
-          <button
-            onClick={() => toggleTypeFilter("Expense")}
-            className={filterType === "Expense" ? "active" : ""}
-          >
-            Expenses
-          </button>
-        </ButtonContainer>
+            <ButtonContainer>
+              <button
+                onClick={() => toggleTypeFilter("Income")}
+                className={filterType === "Income" ? "active" : "incomes"}
+              >
+                Incomes
+              </button>
+
+              <button
+                onClick={() => toggleTypeFilter("Expense")}
+                className={filterType === "Expense" ? "active" : ""}
+              >
+                Expenses
+              </button>
+            </ButtonContainer>
+          </FilterContainer>
+        </Wrapper>
 
         {showDateFilter && (
           <>
@@ -235,6 +240,7 @@ export default function TransactionsPage() {
                 value={filterDate.from || ""} // vorherige Auswahl oder leer
                 onChange={handleDateChange}
               />
+
               <label htmlFor="to">To:</label>
               <input
                 type="date"
@@ -251,7 +257,7 @@ export default function TransactionsPage() {
 
         <StyledList>
           {filteredTransactions.map((transaction) => (
-            <li key={transaction._id}>
+            <Row key={transaction._id}>
               <StyledLink href={`/transactions/${transaction._id}`}>
                 <p className="date">
                   {new Date(transaction.date).toLocaleDateString("de-DE", {
@@ -269,8 +275,8 @@ export default function TransactionsPage() {
                   }
                 />
 
-                <p>{transaction.description}</p>
-                <p>
+                <p className="description">{transaction.description}</p>
+                <p className="category">
                   {transaction.category
                     ? transaction.category.name
                     : "No Category"}
@@ -283,13 +289,13 @@ export default function TransactionsPage() {
                   €
                 </p>
               </StyledLink>
-            </li>
+            </Row>
           ))}
         </StyledList>
-
-        <Navbar />
       </ContentContainer>
-    </PageWrapper>
+
+      <Navbar />
+    </>
   );
 }
 
@@ -335,107 +341,70 @@ const DateFilterPopup = styled.div`
   }
 `;
 
-const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column; // vertikal angeordnet
-  align-items: center; // ContentContainer vertikal zentriert
-  width: 100%;
-  height: 100vh; // gesamte Höhe von Viewport
-`;
+// ******************************************************************************
 
 const ContentContainer = styled.div`
-  width: 100%;
-  max-width: 800px; // wegen list & buttons
+  padding: 20px 20px 83px 20px; // Nav 75px // Abstand Bildschirmrand
+  max-width: 500px; // Breite von list
   margin: 0 auto; // content horizontal zentriert
-  display: flex;
-  flex-direction: column; // content untereinander
-  align-items: center; // content zentriert
-  padding: 20px 20px 75px 20px; // 75px: Nav
 
   h1 {
-    margin-bottom: 20px;
+    text-align: center;
+    margin-bottom: 1.5rem;
   }
 `;
 
 const ChartContainer = styled.div`
-  height: 200px;
-  width: 200px;
+  height: 150px;
+  width: 150px;
+  margin: 0 auto; // horizontal zentriert
+`;
 
-  @media (max-width: 600px) {
-    height: 150px;
-    width: 150px;
-  }
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column; // BalanceContainer + FilterContainer untereinander
+  max-width: 300px; // schmaler als list
+  margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
 `;
 
 const BalanceContainer = styled.div`
-  align-self: flex-end; // rechts im ContentContainer, nicht zentriert
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  // margin: 0 30px 0 0;
+  align-self: flex-end; // rechts im Wrapper
+  text-align: center; // content horizontal zentriert
+  margin: 0 0.5rem 1rem 0; // Abstand rechter Rand + FilterContainer
 
   p.value {
     font-weight: bold;
   }
 `;
 
-const ButtonContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  margin: 20px 0;
-
-  button {
-    background-color: var(--button-background-color);
-    color: var(--button-text-color);
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    width: 90px;
-    height: 30px;
-    padding: 5px 10px;
-
-    &:hover {
-      transform: scale(1.07);
-      font-weight: bold;
-    }
-
-    &.active {
-      background-color: var(--button-active-color);
-      color: var(--button-active-text-color);
-      font-weight: bold;
-    }
-  }
-
-  button:nth-of-type(2) {
-    margin-left: 20px; // expenses-button
-  }
+const FilterContainer = styled.div`
+  display: flex; // filter nebeneinander
+  justify-content: space-between; // date-filter links, ButtonContainer rechts
 `;
 
 const IconWrapper = styled.div`
-  margin-right: auto; // links von liste
   background-color: var(--button-background-color);
   color: var(--button-text-color);
-  width: 30px;
+  width: 32px;
   height: 30px;
   border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+
+  display: flex; // wegen Zentrierung von svg
+  align-items: center; // vertikal zentriert
+  justify-content: center; // horizontal zentriert
+
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
   svg {
     width: 20px;
     height: 20px;
-    stroke-width: ${(props) => (props.className === "active" ? "2.3" : "1.5")};
-
-    &:hover {
-      stroke-width: 2.3;
-    }
+    stroke-width: ${(props) => (props.className === "active" ? "2.3" : "1.8")};
   }
 
   &:hover {
     transform: scale(1.07);
+    color: var(--primary-text-color);
   }
 
   &.active {
@@ -444,75 +413,111 @@ const IconWrapper = styled.div`
   }
 `;
 
-const StyledList = styled.ul`
-  list-style-type: none;
-  width: 100%;
-  // max-width: 600px; // ist zu ContentContainer ausgelagert
+const ButtonContainer = styled.div`
+  display: flex; // für gap
+  gap: 1rem;
 
-  li {
-    background-color: var(--list-item-background);
-    padding: 10px 15px;
-    margin: 0 0 10px 0;
+  button {
+    background-color: var(--button-background-color);
+    color: var(--button-text-color);
+    border: none;
+    width: 90px;
+    height: 30px;
     border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
-    // min-width: 500px; // wg. content
-    min-width: 0;
+    &:hover {
+      transform: scale(1.04);
+      color: var(--primary-text-color);
+    }
 
-    @media (max-width: 600px) {
-      padding: 8px 10px;
+    &.active {
+      background-color: var(--button-active-color);
+      color: var(--button-active-text-color);
     }
   }
 `;
 
+// ******************************************************************************
+
+const StyledList = styled.ul`
+  list-style-type: none;
+  display: grid; //    date | ColorTag | description | category | amount
+  grid-template-columns:
+    minmax(33px, max-content) 5px minmax(60px, 1fr) minmax(0, max-content)
+    74px;
+  align-items: center; // content in der Zeile vertikal zentriert
+  gap: 0.5rem;
+`;
+
+const Row = styled.li`
+  display: contents; // childs direkte grid-items von StyledList
+`;
+
 const StyledLink = styled(Link)`
-  display: grid;
-  grid-template-columns: 90px 20px 1fr 1fr 100px; // Desktop: NICHT mehr ändern!
-  gap: 5px;
-  align-items: center; // wg. ColorTag
   text-decoration: none;
+  display: contents; // date, ColorTag, description, category, amount -> grid
 
-  @media (max-width: 600px) {
-    grid-template-columns:
-      minmax(65px, auto) 10px minmax(90px, 1fr) minmax(72px, 1fr)
-      70px;
-    gap: 2px;
+  p {
+    font-size: 0.8rem;
+  }
 
-    p {
-      font-size: 0.75rem;
-    }
+  p.date {
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  p.description {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  p.category {
+    font-size: 0.6rem;
+    opacity: 0.6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   p.amount {
     text-align: right;
     font-weight: bold;
+    white-space: nowrap;
   }
 
   &:hover {
-    font-weight: bold;
+    p {
+      transform: scale(1.03);
+      color: var(--primary-text-color);
+    }
 
-    span,
-    p.amount {
-      transform: scale(1.07);
+    p.description {
+      transform-origin: left center; // sonst zu arg links
+    }
+
+    p.category {
+      opacity: 1;
+    }
+
+    span {
+      transform: scale(1.2);
     }
   }
 `;
 
 const ColorTag = styled.span`
-  width: 10px;
-  height: 10px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  justify-self: center;
-  margin-right: 7px;
 
   background-color: ${(props) =>
     props.$filterType // wenn type-filter aktiv
       ? props.$categoryColor // dann category color
-      : props.$transactionType === "Income" // main view: type color
+      : props.$transactionType === "Income" // type color (main view)
       ? "var(--income-color)"
       : "var(--expense-color)"};
-
-  @media (max-width: 600px) {
-    width: 8px;
-    height: 8px;
-  }
 `;
