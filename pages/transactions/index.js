@@ -5,6 +5,7 @@ import styled from "styled-components";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import DateFilterIcon from "@/public/icons/date-filter.svg";
+import ChartIcon from "@/public/icons/chart.svg";
 
 // dynamisch, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -16,6 +17,7 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState(null);
   const [filterDate, setFilterDate] = useState({ from: null, to: null });
   const [showDateFilter, setShowDateFilter] = useState(false); // Popup date-filter
+  const [isChartOpen, setIsChartOpen] = useState(false); // chart view
 
   const { data: transactions, error: errorTransactions } =
     useSWR("/api/transactions");
@@ -133,6 +135,10 @@ export default function TransactionsPage() {
     setFilterDate({ from: null, to: null });
   }
 
+  function toggleChart() {
+    setIsChartOpen((prevState) => !prevState);
+  }
+
   // Total Balance basierend auf type-filter
   const totalBalanceLabel =
     filterType === "Income"
@@ -156,45 +162,47 @@ export default function TransactionsPage() {
       <ContentContainer>
         <h1>Transactions</h1>
 
-        {chartData.length > 0 && (
-          <ChartContainer>
-            <ResponsivePie
-              data={chartData}
-              colors={{ datum: "data.color" }}
-              innerRadius={0.5} // 50 % ausgeschnitten
-              padAngle={2} // Abstand zwischen Segmenten
-              cornerRadius={3} // rundere Ecken der Segmente
-              arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
-              animate={false} // Segmente springen nicht
-              enableArcLabels={false} // keine Zahlen im Segment
-              tooltip={({ datum }) => {
-                const percentage = (
-                  (datum.value / totalFilteredValue) *
-                  100
-                ).toFixed(0);
-                return (
-                  <div>
-                    {datum.label}: <strong>{percentage} %</strong>
-                  </div>
-                );
-              }}
-            />
-          </ChartContainer>
+        {isChartOpen && chartData.length > 0 && (
+          <ChartSection>
+            <PieWrapper>
+              <ResponsivePie
+                data={chartData}
+                colors={{ datum: "data.color" }}
+                innerRadius={0.5} // 50 % ausgeschnitten
+                padAngle={2} // Abstand zwischen Segmenten
+                cornerRadius={3} // rundere Ecken der Segmente
+                arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
+                animate={false} // Segmente springen nicht
+                enableArcLabels={false} // keine Zahlen im Segment
+                tooltip={({ datum }) => {
+                  const percentage = (
+                    (datum.value / totalFilteredValue) *
+                    100
+                  ).toFixed(0);
+                  return (
+                    <div>
+                      {datum.label}: <strong>{percentage} %</strong>
+                    </div>
+                  );
+                }}
+              />
+            </PieWrapper>
+
+            <BalanceContainer>
+              <p>{totalBalanceLabel}</p>
+              <p className="value">
+                {totalBalanceValue.toLocaleString("de-DE", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                €
+              </p>
+            </BalanceContainer>
+          </ChartSection>
         )}
 
-        <Wrapper>
-          <BalanceContainer>
-            <p>{totalBalanceLabel}</p>
-            <p className="value">
-              {totalBalanceValue.toLocaleString("de-DE", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}{" "}
-              €
-            </p>
-          </BalanceContainer>
-
-          <FilterContainer>
+        <FilterSection>
+          <IconContainer>
             <IconWrapper
               onClick={toggleDateFilterPopup}
               className={
@@ -209,23 +217,30 @@ export default function TransactionsPage() {
               <DateFilterIcon />
             </IconWrapper>
 
-            <ButtonContainer>
-              <button
-                onClick={() => toggleTypeFilter("Income")}
-                className={filterType === "Income" ? "active" : "incomes"}
-              >
-                Incomes
-              </button>
+            <IconWrapper
+              onClick={toggleChart}
+              className={isChartOpen ? "active" : ""}
+            >
+              <ChartIcon />
+            </IconWrapper>
+          </IconContainer>
 
-              <button
-                onClick={() => toggleTypeFilter("Expense")}
-                className={filterType === "Expense" ? "active" : ""}
-              >
-                Expenses
-              </button>
-            </ButtonContainer>
-          </FilterContainer>
-        </Wrapper>
+          <ButtonContainer>
+            <button
+              onClick={() => toggleTypeFilter("Income")}
+              className={filterType === "Income" ? "active" : "incomes"}
+            >
+              Incomes
+            </button>
+
+            <button
+              onClick={() => toggleTypeFilter("Expense")}
+              className={filterType === "Expense" ? "active" : ""}
+            >
+              Expenses
+            </button>
+          </ButtonContainer>
+        </FilterSection>
 
         {showDateFilter && (
           <>
@@ -354,32 +369,39 @@ const ContentContainer = styled.div`
   }
 `;
 
-const ChartContainer = styled.div`
+const ChartSection = styled.div`
+  display: flex;
+  flex-direction: column; // PieWrapper + BalanceContainer untereinander
+  max-width: 275px; // schmaler als FilterSection
+  margin: 0 auto 1.5rem auto; // Abstand FilterSection, horizontal zentriert
+`;
+
+const PieWrapper = styled.div`
   height: 150px;
   width: 150px;
   margin: 0 auto; // horizontal zentriert
 `;
 
-const Wrapper = styled.div`
-  display: flex;
-  flex-direction: column; // BalanceContainer + FilterContainer untereinander
-  max-width: 300px; // schmaler als list
-  margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
-`;
-
 const BalanceContainer = styled.div`
-  align-self: flex-end; // rechts im Wrapper
+  align-self: flex-end; // rechts in ChartSection
   text-align: center; // content horizontal zentriert
-  margin: 0 0.5rem 1rem 0; // Abstand rechter Rand + FilterContainer
 
   p.value {
     font-weight: bold;
   }
 `;
 
-const FilterContainer = styled.div`
-  display: flex; // filter nebeneinander
-  justify-content: space-between; // date-filter links, ButtonContainer rechts
+const FilterSection = styled.div`
+  display: flex; // IconContainer + ButtonContainer nebeneinander
+  justify-content: space-between; // icon links, button rechts
+
+  max-width: 400px; // schmaler als list
+  margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
+`;
+
+const IconContainer = styled.div`
+  display: flex; // svgs nebeneinander
+  gap: 1rem; // für gap
 `;
 
 const IconWrapper = styled.div`
@@ -389,7 +411,7 @@ const IconWrapper = styled.div`
   height: 30px;
   border-radius: 10px;
 
-  display: flex; // wegen Zentrierung von svg
+  display: flex; // wegen Zentrierung von svgs
   align-items: center; // vertikal zentriert
   justify-content: center; // horizontal zentriert
 
