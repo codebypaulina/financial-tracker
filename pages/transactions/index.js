@@ -3,7 +3,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DateFilterIcon from "@/public/icons/date-filter.svg";
 import ChartIcon from "@/public/icons/chart.svg";
 
@@ -17,7 +17,28 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState(null);
   const [filterDate, setFilterDate] = useState({ from: null, to: null });
   const [showDateFilter, setShowDateFilter] = useState(false); // Popup date-filter
-  const [isChartOpen, setIsChartOpen] = useState(false); // chart view
+  const [isChartOpen, setIsChartOpen] = useState(false); // chart-state
+
+  // *** chart-state bei Änderung in session storage speichern & daraus abrufen:
+  // *** 1. [abrufen]
+  useEffect(() => {
+    // holt gespeicherten key aus storage (state = true / null)
+    const storedChartState = sessionStorage.getItem("isChartOpen");
+
+    // wenn key existiert -> state = true
+    if (storedChartState) setIsChartOpen(true);
+  }, []); // läuft nur 1x bei 1. render
+
+  // *** 2. [speichern]
+  useEffect(() => {
+    // (nur) wenn state = true -> key in storage speichern
+    if (isChartOpen) {
+      sessionStorage.setItem("isChartOpen", "true");
+    } else {
+      // ansonsten key löschen (damit default = false)
+      sessionStorage.removeItem("isChartOpen");
+    }
+  }, [isChartOpen]); // läuft nur, wenn sich state ändert (= true)
 
   const { data: transactions, error: errorTransactions } =
     useSWR("/api/transactions");
