@@ -4,7 +4,7 @@ import Link from "next/link";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
-import DateFilterIcon from "@/public/icons/date-filter.svg";
+import DateIcon from "@/public/icons/date.svg";
 import ChartIcon from "@/public/icons/chart.svg";
 
 // dynamisch, sonst ES Module error (auch bei aktuellster next.js-Version)
@@ -235,14 +235,14 @@ export default function TransactionsPage() {
                   : ""
               }
             >
-              <DateFilterIcon />
+              <DateIcon className="date" />
             </IconWrapper>
 
             <IconWrapper
               onClick={toggleChart}
               className={isChartOpen ? "active" : ""}
             >
-              <ChartIcon />
+              <ChartIcon className="chart" />
             </IconWrapper>
           </IconContainer>
 
@@ -336,43 +336,66 @@ export default function TransactionsPage() {
 }
 
 const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  position: fixed; // bei scroll im viewport
+  top: 0; // Start oberer Rand
+  left: 0; // Start linker Rand
+  z-index: 9; // über Seite, unter Popup
+
   background: rgba(0, 0, 0, 0.6); // abgedunkelt
-  z-index: 9; // Popup über content
+  width: 100%; // über komplette Breite
+  height: 100%; // über komplette Höhe
 `;
 
 const DateFilterPopup = styled.div`
-  position: fixed;
+  position: fixed; // bei scroll im viewport
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: var(--button-background-color);
-  color: var(--button-text-color);
-  padding: 20px;
-  border-radius: 15px;
   z-index: 10; // Popup über Overlay
+
+  background-color: var(--button-background-color);
+  width: 172px;
+  padding: 1.2rem 1.7rem 1.7rem 1.7rem; // Innenabstand
+  border-radius: 1.5rem; // abgerundete Ecken
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  align-items: center;
+  flex-direction: column; // content untereinander
+
+  label {
+    font-weight: bold;
+    margin-bottom: 0.5rem; // Abstand input
+  }
+
+  input {
+    height: 1.5rem;
+    border-radius: 0.5rem; // abgerundete Ecken
+    border: 0.07rem solid var(--button-hover-color);
+    accent-color: var(
+      --button-hover-color // Firefox: wenn angeklickt, kein blauer Rahmen
+    );
+    cursor: text;
+  }
+
+  input#from {
+    margin-bottom: 0.8rem; // Abstand #to
+  }
 
   button {
-    background-color: var(--button-active-color);
-    color: var(--button-active-text-color);
-    width: 50px;
-    height: 30px;
-    padding: 5px 10px;
-    border-radius: 10px;
+    align-self: center;
     border: none;
+    border-radius: 17px;
+    width: 55px;
+    height: 30px;
     cursor: pointer;
+    font-weight: bold;
+    background-color: var(--secondary-text-color);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 1);
+    margin-top: 1.5rem; // Abstand input
 
     &:hover {
       transform: scale(1.07);
-      font-weight: bold;
+      // transform-origin: center;
     }
   }
 `;
@@ -431,18 +454,20 @@ const IconWrapper = styled.div`
   width: 32px;
   height: 30px;
   border-radius: 10px;
-
   display: flex; // wegen Zentrierung von svgs
   align-items: center; // vertikal zentriert
   justify-content: center; // horizontal zentriert
-
   cursor: pointer;
   box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
-  svg {
+  svg.date {
+    width: 18px;
+    height: 18px;
+  }
+
+  svg.chart {
     width: 20px;
     height: 20px;
-    stroke-width: ${(props) => (props.className === "active" ? "2.3" : "1.8")};
   }
 
   &:hover {
