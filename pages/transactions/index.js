@@ -1,9 +1,9 @@
-import Navbar from "@/components/Navbar";
 import useSWR from "swr";
-import Link from "next/link";
-import styled from "styled-components";
-import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import styled from "styled-components";
+import Navbar from "@/components/Navbar";
 import DateIcon from "@/public/icons/date.svg";
 import ChartIcon from "@/public/icons/chart.svg";
 
@@ -14,13 +14,13 @@ const ResponsivePie = dynamic(
 );
 
 export default function TransactionsPage() {
-  const [filterType, setFilterType] = useState(null);
-  const [filterDate, setFilterDate] = useState({ from: null, to: null });
-  const [showDateFilter, setShowDateFilter] = useState(false); // Popup date-filter
+  const [typeFilter, setTypeFilter] = useState(null); // type-filter
+  const [dateFilter, setDateFilter] = useState({ from: null, to: null }); // date-filter
+  const [isDateFilterPopupOpen, setIsDateFilterPopupOpen] = useState(false); // date-filter-popup
   const [isChartOpen, setIsChartOpen] = useState(false); // chart-state
 
-  // *** chart-state bei Änderung in session storage speichern & daraus abrufen:
-  // *** 1. [abrufen]
+  // *** [ chart-state in session storage ] ************************************************
+  // *** [1. abrufen]
   useEffect(() => {
     // holt gespeicherten key aus storage (state = true / null)
     const storedChartState = sessionStorage.getItem("isChartOpen");
@@ -29,7 +29,7 @@ export default function TransactionsPage() {
     if (storedChartState) setIsChartOpen(true);
   }, []); // läuft nur 1x bei 1. render
 
-  // *** 2. [speichern]
+  // *** [2. speichern]: bei Änderung
   useEffect(() => {
     // (nur) wenn state = true -> key in storage speichern
     if (isChartOpen) {
@@ -40,57 +40,106 @@ export default function TransactionsPage() {
     }
   }, [isChartOpen]); // läuft nur, wenn sich state ändert (= true)
 
+  // ***************************************************************************************
+
+  // *** [ fetch ]
   const { data: transactions, error: errorTransactions } =
     useSWR("/api/transactions");
   const { data: categories, error: errorCategories } =
     useSWR("/api/categories");
 
+  // *** [ guards ]
   if (errorTransactions || errorCategories) return <h3>Failed to load data</h3>;
-  if (!transactions || !categories) return <h3>Loading...</h3>;
+  if (!transactions || !categories) return <h3>Loading ...</h3>;
 
-  // *** SORTIERTE transactions ***
-  // erst transactions nach Datum absteigend sortieren
-  // (Date-Objekt: nimmt sonst aktuelles Datum nicht mit rein)
-  const sortedTransactions = transactions.sort(
+  // *** [ abgeleitete Daten ] *************************************************************
+  // *** [ 1. TRANSACTIONS ] sortieren & filtern *******************************************
+  // *** [sortieren]: nach Datum absteigend
+  const sortedTransactions = [...transactions].sort(
     (a, b) => new Date(b.date) - new Date(a.date)
   );
 
-  // *** SORTIERTE & GEFILTERTE transactions ***
-  // danach auf sortedTransactions type- & date-filter anwenden
+  // date-range: für date-filter-popup from/to-default (toggleDateFilterPopup)
+  const latestDate = sortedTransactions[0]?.date.split("T")[0]; // neuste transaction
+  const earliestDate =
+    sortedTransactions[sortedTransactions.length - 1]?.date.split("T")[0]; // älteste transaction
+
+  // *** [filtern]: type- & date-filter auf sortedTransactions
+  const fromDate = dateFilter.from ? new Date(dateFilter.from) : null;
+  const toDate = dateFilter.to ? new Date(dateFilter.to) : null;
+  if (toDate) toDate.setHours(23, 59, 59, 999); // end of day: ganzen Tag einschließen (23:59:59)
+
   const filteredTransactions = sortedTransactions.filter((transaction) => {
-    const typeMatches = !filterType || transaction.type === filterType; // type-filter
+    // type-filter
+    const typeMatches = !typeFilter || transaction.type === typeFilter;
 
+    // date-filter
     const transactionDate = new Date(transaction.date);
-    const fromDate = filterDate.from ? new Date(filterDate.from) : null;
-    const toDate = filterDate.to ? new Date(filterDate.to) : null;
-
     const dateMatches =
       (!fromDate || transactionDate >= fromDate) &&
-      (!toDate || transactionDate <= toDate); // date-filter
+      (!toDate || transactionDate <= toDate);
 
     return typeMatches && dateMatches;
   });
 
-  // *** SORTIERTE & GEFILTERTE categories mit totalAmount ***
-  // totalAmounts pro category basierend auf filteredTransactions summieren
-  const categoriesWithAmounts = categories.map((category) => {
-    const totalAmount = filteredTransactions
-      .filter(
-        (transaction) =>
-          transaction.category &&
-          transaction.category._id.toString() === category._id.toString() // !!
-      ) // nur die ta filtern, die dieser ca zugehören
-      .reduce((sum, transaction) => sum + transaction.amount, 0); // amounts dieser ta summieren
+  // *** [ 2. CATEGORIES ] total amount ****************************************************
+  // *** [object für Summe pro category]: key = categoryId (string) | value = aufsummierter Betrag (number)
+  const totalsByCategoryId = {};
 
-    return { ...category, totalAmount }; // ca mit totalAmount
+  // *** [transactions]: 1x durch alle aktuell sichtbaren transactions
+  // *** -> zu welcher category gehört transaction? -> amount zu passender category-Summe addieren
+  filteredTransactions.forEach((transaction) => {
+    const categoryId = transaction.category?._id?.toString(); // category-ID aus transaction
+
+    if (!categoryId) return; // falls keine category in transaction -> überspringen
+    if (!totalsByCategoryId[categoryId]) {
+      totalsByCategoryId[categoryId] = 0; // falls category noch nicht in totalsByCategoryId -> Summe = 0
+    }
+
+    totalsByCategoryId[categoryId] += transaction.amount; // amount von transaction zu Summe in totalsByCategoryId
   });
 
-  // chartData basierend auf filterType
-  const chartData = filterType
+  // *** [categories]: 1x durch alle categories
+  // *** -> zu jeder category passende Summe aus totalsByCategoryId dazu
+  const categoriesWithAmounts = categories.map((category) => {
+    const categoryId = category._id.toString(); // category-ID aus category
+    return { ...category, totalAmount: totalsByCategoryId[categoryId] || 0 }; // Kopie ursprüngl. category-object + Summe
+  });
+
+  // *** [ 3. BALANCE-DATA & CHART-DATA ] **************************************************
+  // *** [totals]
+  let totalIncome = 0;
+  let totalExpense = 0;
+
+  // *** 1x durch alle categories mit total amount
+  categoriesWithAmounts.forEach((category) => {
+    // total amount von category zu total income/expense addieren
+    if (category.type === "Income") totalIncome += category.totalAmount;
+    if (category.type === "Expense") totalExpense += category.totalAmount;
+  });
+
+  // *** [balance-data] value aus totals
+  const totalBalanceValue =
+    typeFilter === "Income"
+      ? totalIncome
+      : typeFilter === "Expense"
+      ? totalExpense
+      : totalIncome - totalExpense;
+
+  const totalBalanceLabel =
+    typeFilter === "Income"
+      ? "Total Income"
+      : typeFilter === "Expense"
+      ? "Total Expense"
+      : "Total Balance";
+
+  // *** [chart-data] values aus totals
+  // *** main view: total balance (expenses + remaining income) // type-filter: income-/expense-categories
+  const chartData = typeFilter
     ? categoriesWithAmounts
         .filter(
-          (category) => category.totalAmount > 0 && category.type === filterType
-        ) // keine leeren & mit passendem type
+          (category) => category.type === typeFilter && category.totalAmount > 0
+        )
         .map((category) => ({
           id: category._id,
           label: category.name,
@@ -101,82 +150,58 @@ export default function TransactionsPage() {
         {
           id: "Expenses",
           label: "Expenses",
-          value: categoriesWithAmounts
-            .filter((category) => category.type === "Expense")
-            .reduce((sum, category) => sum + category.totalAmount, 0), // total expenses
+          value: totalExpense,
           color: "var(--expense-color)",
         },
         {
           id: "Remaining Income",
           label: "Remaining Income",
-          value:
-            categoriesWithAmounts
-              .filter((category) => category.type === "Income")
-              .reduce((sum, category) => sum + category.totalAmount, 0) -
-            categoriesWithAmounts
-              .filter((category) => category.type === "Expense")
-              .reduce((sum, category) => sum + category.totalAmount, 0), // remaining income = total incomes - total expenses
+          value: totalIncome - totalExpense,
           color: "var(--income-color)",
         },
       ];
 
-  // für tooltip %: Basis type
-  const totalFilteredValue = chartData.reduce(
-    (sum, data) => sum + data.value,
+  // *** [tooltip %] aus chart-data
+  const chartTotalValue = chartData.reduce(
+    (sum, segment) => sum + segment.value,
     0
   );
 
-  // für Popup from/to: ungefilterte list
-  const earliestDate =
-    transactions[transactions.length - 1]?.date.split("T")[0]; // neuste transaction
-  const latestDate = transactions[0]?.date.split("T")[0]; // älterste transaction
+  function getChartPercentage(value) {
+    if (!chartTotalValue) return 0; // damit nicht durch 0 geteilt wird
+    return Math.round((value / chartTotalValue) * 100);
+  }
+
+  // ***************************************************************************************
+
+  function toggleChart() {
+    setIsChartOpen((prevState) => !prevState);
+  }
 
   function toggleTypeFilter(type) {
-    setFilterType((prevFilterType) => (prevFilterType === type ? null : type));
+    setTypeFilter((prevState) => (prevState === type ? null : type));
   }
 
   function toggleDateFilterPopup() {
-    setShowDateFilter((prevState) => !prevState);
+    setIsDateFilterPopupOpen((prevState) => !prevState);
 
-    // Popup from/to default: falls bereits eingestellte Werte gibt, dann diese, ansonsten ungefilterte list
-    if (!showDateFilter) {
-      setFilterDate((prev) => ({
-        from: prev.from ?? earliestDate,
-        to: prev.to ?? latestDate,
+    // from/to-default: falls bereits eingestellte Werte gibt, dann diese, ansonsten ungefilterte list
+    if (!isDateFilterPopupOpen) {
+      setDateFilter((prevState) => ({
+        from: prevState.from ?? earliestDate,
+        to: prevState.to ?? latestDate,
       }));
     }
   }
 
   function handleDateChange(event) {
     const { name, value } = event.target;
-    setFilterDate((prev) => ({ ...prev, [name]: value }));
+    setDateFilter((prevState) => ({ ...prevState, [name]: value }));
   }
 
   function clearDateFilter() {
-    setFilterDate({ from: null, to: null });
+    setDateFilter({ from: null, to: null });
   }
-
-  function toggleChart() {
-    setIsChartOpen((prevState) => !prevState);
-  }
-
-  // Total Balance basierend auf type-filter
-  const totalBalanceLabel =
-    filterType === "Income"
-      ? "Total Incomes"
-      : filterType === "Expense"
-      ? "Total Expenses"
-      : "Total Balance";
-
-  const totalBalanceValue = categoriesWithAmounts
-    .filter((category) => (filterType ? category.type === filterType : true))
-    .reduce(
-      (sum, category) =>
-        sum +
-        category.totalAmount *
-          (category.type === "Expense" && !filterType ? -1 : 1),
-      0
-    );
 
   return (
     <>
@@ -195,17 +220,12 @@ export default function TransactionsPage() {
                 arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
                 animate={false} // Segmente springen nicht
                 enableArcLabels={false} // keine Zahlen im Segment
-                tooltip={({ datum }) => {
-                  const percentage = (
-                    (datum.value / totalFilteredValue) *
-                    100
-                  ).toFixed(0);
-                  return (
-                    <div>
-                      {datum.label}: <strong>{percentage} %</strong>
-                    </div>
-                  );
-                }}
+                tooltip={({ datum }) => (
+                  <div>
+                    {datum.label}:{" "}
+                    <strong>{getChartPercentage(datum.value)} %</strong>
+                  </div>
+                )}
               />
             </PieWrapper>
 
@@ -226,14 +246,7 @@ export default function TransactionsPage() {
           <IconContainer>
             <IconWrapper
               onClick={toggleDateFilterPopup}
-              className={
-                (filterDate.from !== earliestDate ||
-                  filterDate.to !== latestDate) &&
-                filterDate.from &&
-                filterDate.to
-                  ? "active"
-                  : ""
-              }
+              className={dateFilter.from || dateFilter.to ? "active" : ""}
             >
               <DateIcon className="date" />
             </IconWrapper>
@@ -249,21 +262,21 @@ export default function TransactionsPage() {
           <ButtonContainer>
             <button
               onClick={() => toggleTypeFilter("Income")}
-              className={filterType === "Income" ? "active" : "incomes"}
+              className={typeFilter === "Income" ? "active" : "incomes"}
             >
               Incomes
             </button>
 
             <button
               onClick={() => toggleTypeFilter("Expense")}
-              className={filterType === "Expense" ? "active" : ""}
+              className={typeFilter === "Expense" ? "active" : ""}
             >
               Expenses
             </button>
           </ButtonContainer>
         </FilterSection>
 
-        {showDateFilter && (
+        {isDateFilterPopupOpen && (
           <>
             <Overlay onClick={toggleDateFilterPopup} />
 
@@ -273,7 +286,7 @@ export default function TransactionsPage() {
                 type="date"
                 id="from"
                 name="from"
-                value={filterDate.from || ""} // vorherige Auswahl oder leer
+                value={dateFilter.from || ""} // vorherige Auswahl oder leer
                 onChange={handleDateChange}
               />
 
@@ -282,7 +295,7 @@ export default function TransactionsPage() {
                 type="date"
                 id="to"
                 name="to"
-                value={filterDate.to || ""} // vorherige Auswahl oder leer
+                value={dateFilter.to || ""} // vorherige Auswahl oder leer
                 onChange={handleDateChange}
               />
 
@@ -304,7 +317,7 @@ export default function TransactionsPage() {
                 </p>
 
                 <ColorTag
-                  $filterType={filterType}
+                  $typeFilter={typeFilter}
                   $transactionType={transaction.type}
                   $categoryColor={
                     transaction.category ? transaction.category.color : "BLACK"
@@ -583,7 +596,7 @@ const ColorTag = styled.span`
   border-radius: 50%;
 
   background-color: ${(props) =>
-    props.$filterType // wenn type-filter aktiv
+    props.$typeFilter // wenn type-filter aktiv
       ? props.$categoryColor // dann category color
       : props.$transactionType === "Income" // type color (main view)
       ? "var(--income-color)"
