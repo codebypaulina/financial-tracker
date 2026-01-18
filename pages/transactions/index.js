@@ -231,7 +231,7 @@ export default function TransactionsPage() {
 
             <BalanceContainer>
               <p>{totalBalanceLabel}</p>
-              <p className="value">
+              <p className={`value ${totalBalanceValue < 0 ? "negative" : ""}`}>
                 {totalBalanceValue.toLocaleString("de-DE", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -445,6 +445,10 @@ const BalanceContainer = styled.div`
 
   p.value {
     font-weight: bold;
+  }
+
+  p.value.negative {
+    color: var(--expense-color);
   }
 `;
 
