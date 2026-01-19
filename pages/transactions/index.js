@@ -16,7 +16,7 @@ const ResponsivePie = dynamic(
 export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState(null); // type-filter
   const [dateFilter, setDateFilter] = useState({ from: null, to: null }); // date-filter
-  const [isDateFilterPopupOpen, setIsDateFilterPopupOpen] = useState(false); // date-filter-popup
+  const [dateFilterPopup, setDateFilterPopup] = useState(false); // date-filter-popup
   const [isChartOpen, setIsChartOpen] = useState(false); // chart-state
 
   // *** [ chart-state in session storage ] ************************************************
@@ -59,14 +59,25 @@ export default function TransactionsPage() {
     (a, b) => new Date(b.date) - new Date(a.date)
   );
 
-  // date-range: für date-filter-popup from/to-default (toggleDateFilterPopup)
-  const latestDate = sortedTransactions[0]?.date.split("T")[0]; // neuste transaction
+  // für DateFilterPopup: from/to-default
+  // const latestDate = sortedTransactions[0]?.date.split("T")[0]; // neuste transaction
   const earliestDate =
     sortedTransactions[sortedTransactions.length - 1]?.date.split("T")[0]; // älteste transaction
+  const today = new Date().toISOString().split("T")[0];
+  const defaultFrom = earliestDate ?? null;
+  const defaultTo = today;
+  // für date-filter-button: active-style (wenn state nicht default)
+  const isDateFilterActive =
+    (dateFilter.from ?? defaultFrom) !== defaultFrom ||
+    (dateFilter.to ?? defaultTo) !== defaultTo;
 
   // *** [filtern]: type- & date-filter auf sortedTransactions
-  const fromDate = dateFilter.from ? new Date(dateFilter.from) : null;
-  const toDate = dateFilter.to ? new Date(dateFilter.to) : null;
+  const fromDate =
+    (dateFilter.from ?? defaultFrom)
+      ? new Date(dateFilter.from ?? defaultFrom)
+      : null;
+  const toDate =
+    (dateFilter.to ?? defaultTo) ? new Date(dateFilter.to ?? defaultTo) : null;
   if (toDate) toDate.setHours(23, 59, 59, 999); // end of day: ganzen Tag einschließen (23:59:59)
 
   const filteredTransactions = sortedTransactions.filter((transaction) => {
@@ -123,15 +134,15 @@ export default function TransactionsPage() {
     typeFilter === "Income"
       ? totalIncome
       : typeFilter === "Expense"
-      ? totalExpense
-      : totalIncome - totalExpense;
+        ? totalExpense
+        : totalIncome - totalExpense;
 
   const totalBalanceLabel =
     typeFilter === "Income"
       ? "Total Income"
       : typeFilter === "Expense"
-      ? "Total Expense"
-      : "Total Balance";
+        ? "Total Expense"
+        : "Total Balance";
 
   // *** [chart-data] values aus totals
   // *** main view: total balance (expenses + remaining income) // type-filter: income-/expense-categories
@@ -183,15 +194,7 @@ export default function TransactionsPage() {
   }
 
   function toggleDateFilterPopup() {
-    setIsDateFilterPopupOpen((prevState) => !prevState);
-
-    // from/to-default: falls bereits eingestellte Werte gibt, dann diese, ansonsten ungefilterte list
-    if (!isDateFilterPopupOpen) {
-      setDateFilter((prevState) => ({
-        from: prevState.from ?? earliestDate,
-        to: prevState.to ?? latestDate,
-      }));
-    }
+    setDateFilterPopup((prevState) => !prevState);
   }
 
   function handleDateChange(event) {
@@ -246,7 +249,7 @@ export default function TransactionsPage() {
           <IconContainer>
             <IconWrapper
               onClick={toggleDateFilterPopup}
-              className={dateFilter.from || dateFilter.to ? "active" : ""}
+              className={isDateFilterActive ? "active" : ""}
             >
               <DateIcon className="date" />
             </IconWrapper>
@@ -276,7 +279,7 @@ export default function TransactionsPage() {
           </ButtonContainer>
         </FilterSection>
 
-        {isDateFilterPopupOpen && (
+        {dateFilterPopup && (
           <>
             <Overlay onClick={toggleDateFilterPopup} />
 
@@ -286,7 +289,7 @@ export default function TransactionsPage() {
                 type="date"
                 id="from"
                 name="from"
-                value={dateFilter.from || ""} // vorherige Auswahl oder leer
+                value={(dateFilter.from ?? defaultFrom) || ""} // vorherige Auswahl oder default
                 onChange={handleDateChange}
               />
 
@@ -295,7 +298,7 @@ export default function TransactionsPage() {
                 type="date"
                 id="to"
                 name="to"
-                value={dateFilter.to || ""} // vorherige Auswahl oder leer
+                value={(dateFilter.to ?? defaultTo) || ""} // vorherige Auswahl oder default
                 onChange={handleDateChange}
               />
 
@@ -603,6 +606,6 @@ const ColorTag = styled.span`
     props.$typeFilter // wenn type-filter aktiv
       ? props.$categoryColor // dann category color
       : props.$transactionType === "Income" // type color (main view)
-      ? "var(--income-color)"
-      : "var(--expense-color)"};
+        ? "var(--income-color)"
+        : "var(--expense-color)"};
 `;
