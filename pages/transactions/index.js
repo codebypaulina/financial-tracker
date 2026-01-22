@@ -19,8 +19,34 @@ export default function TransactionsPage() {
   const [dateFilterPopup, setDateFilterPopup] = useState(false); // date-filter-popup
   const [isChartOpen, setIsChartOpen] = useState(false); // chart-state
 
-  // *** [ chart-state in session storage ] ************************************************
-  // *** [1. abrufen]
+  // dateFilter nur active, wenn from/to nicht null
+  const isDateFilterActive = dateFilter.from !== null || dateFilter.to !== null;
+
+  // *** [ session storage ] ***************************************************************
+  // *** [ 1. DATE-filter ] ****************************************************************
+  // *** [abrufen]
+  useEffect(() => {
+    const storedDateFilter = sessionStorage.getItem("dateFilter"); // holt gespeicherten key aus storage
+    if (!storedDateFilter) return;
+
+    const parsedDateFilter = JSON.parse(storedDateFilter); // string in object für from/to
+    const { from = null, to = null } = parsedDateFilter; // holt from/to
+    setDateFilter({ from, to }); // setzt from/to
+  }, []); // läuft nur 1x bei 1. render
+
+  // *** [speichern]: bei Änderung
+  useEffect(() => {
+    // (nur) wenn from/to nicht null -> key in storage
+    if (isDateFilterActive) {
+      sessionStorage.setItem("dateFilter", JSON.stringify(dateFilter));
+    } else {
+      // ansonsten key löschen
+      sessionStorage.removeItem("dateFilter");
+    }
+  }, [isDateFilterActive, dateFilter]); // läuft nur, wenn sich state ändert (= from/to nicht null)
+
+  // *** [ 2. CHART-state ] ****************************************************************
+  // *** [abrufen]
   useEffect(() => {
     // holt gespeicherten key aus storage (state = true / null)
     const storedChartState = sessionStorage.getItem("isChartOpen");
@@ -29,7 +55,7 @@ export default function TransactionsPage() {
     if (storedChartState) setIsChartOpen(true);
   }, []); // läuft nur 1x bei 1. render
 
-  // *** [2. speichern]: bei Änderung
+  // *** [speichern]: bei Änderung
   useEffect(() => {
     // (nur) wenn state = true -> key in storage speichern
     if (isChartOpen) {
@@ -59,17 +85,13 @@ export default function TransactionsPage() {
     (a, b) => new Date(b.date) - new Date(a.date)
   );
 
-  // für DateFilterPopup: from/to-default
+  // für DateFilterPopup / handleDateChange: from/to-default
   // const latestDate = sortedTransactions[0]?.date.split("T")[0]; // neuste transaction
   const earliestDate =
     sortedTransactions[sortedTransactions.length - 1]?.date.split("T")[0]; // älteste transaction
   const today = new Date().toISOString().split("T")[0];
   const defaultFrom = earliestDate ?? null;
   const defaultTo = today;
-  // für date-filter-button: active-style (wenn state nicht default)
-  const isDateFilterActive =
-    (dateFilter.from ?? defaultFrom) !== defaultFrom ||
-    (dateFilter.to ?? defaultTo) !== defaultTo;
 
   // *** [filtern]: type- & date-filter auf sortedTransactions
   const fromDate =
@@ -199,7 +221,11 @@ export default function TransactionsPage() {
 
   function handleDateChange(event) {
     const { name, value } = event.target;
-    setDateFilter((prevState) => ({ ...prevState, [name]: value }));
+
+    const defaultValue = name === "from" ? defaultFrom : defaultTo;
+    const dateFilterValue = !value || value === defaultValue ? null : value; // wenn default -> null
+
+    setDateFilter((prevState) => ({ ...prevState, [name]: dateFilterValue }));
   }
 
   function clearDateFilter() {
