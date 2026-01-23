@@ -66,6 +66,24 @@ export default function TransactionsPage() {
     }
   }, [isChartOpen]); // läuft nur, wenn sich state ändert (= true)
 
+  // *** [ 3. TYPE-filter ] ****************************************************************
+  // *** [abrufen]
+  useEffect(() => {
+    const storedTypeFilter = sessionStorage.getItem("typeFilter");
+    if (storedTypeFilter !== "Income" && storedTypeFilter !== "Expense") return;
+
+    setTypeFilter(storedTypeFilter);
+  }, []);
+
+  // *** [speichern]
+  useEffect(() => {
+    if (typeFilter) {
+      sessionStorage.setItem("typeFilter", typeFilter);
+    } else {
+      sessionStorage.removeItem("typeFilter");
+    }
+  }, [typeFilter]);
+
   // ***************************************************************************************
 
   // *** [ fetch ]
@@ -291,7 +309,7 @@ export default function TransactionsPage() {
           <ButtonContainer>
             <button
               onClick={() => toggleTypeFilter("Income")}
-              className={typeFilter === "Income" ? "active" : "incomes"}
+              className={typeFilter === "Income" ? "active" : ""}
             >
               Incomes
             </button>
