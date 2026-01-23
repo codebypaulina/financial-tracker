@@ -1,10 +1,11 @@
-import Navbar from "@/components/Navbar";
 import useSWR from "swr";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import styled from "styled-components";
 import dynamic from "next/dynamic";
-import { useState } from "react";
-import DateFilterIcon from "@/public/icons/date-filter.svg";
+import styled from "styled-components";
+import Navbar from "@/components/Navbar";
+import DateIcon from "@/public/icons/date.svg";
+import ChartIcon from "@/public/icons/chart.svg";
 
 // dynamisch, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -13,61 +14,183 @@ const ResponsivePie = dynamic(
 );
 
 export default function TransactionsPage() {
-  const [filterType, setFilterType] = useState(null);
-  const [filterDate, setFilterDate] = useState({ from: null, to: null });
-  const [showDateFilter, setShowDateFilter] = useState(false); // Popup date-filter
+  const [typeFilter, setTypeFilter] = useState(null); // type-filter
+  const [dateFilter, setDateFilter] = useState({ from: null, to: null }); // date-filter
+  const [dateFilterPopup, setDateFilterPopup] = useState(false); // date-filter-popup
+  const [isChartOpen, setIsChartOpen] = useState(false); // chart-state
 
+  // dateFilter nur active, wenn from/to nicht null
+  const isDateFilterActive = dateFilter.from !== null || dateFilter.to !== null;
+
+  // *** [ session storage ] ***************************************************************
+  // *** [ 1. DATE-filter ] ****************************************************************
+  // *** [abrufen]
+  useEffect(() => {
+    const storedDateFilter = sessionStorage.getItem("dateFilter"); // holt gespeicherten key aus storage
+    if (!storedDateFilter) return;
+
+    const parsedDateFilter = JSON.parse(storedDateFilter); // string in object für from/to
+    const { from = null, to = null } = parsedDateFilter; // holt from/to
+    setDateFilter({ from, to }); // setzt from/to
+  }, []); // läuft nur 1x bei 1. render
+
+  // *** [speichern]: bei Änderung
+  useEffect(() => {
+    // (nur) wenn from/to nicht null -> key in storage
+    if (isDateFilterActive) {
+      sessionStorage.setItem("dateFilter", JSON.stringify(dateFilter));
+    } else {
+      // ansonsten key löschen
+      sessionStorage.removeItem("dateFilter");
+    }
+  }, [isDateFilterActive, dateFilter]); // läuft nur, wenn sich state ändert (= from/to nicht null)
+
+  // *** [ 2. CHART-state ] ****************************************************************
+  // *** [abrufen]
+  useEffect(() => {
+    // holt gespeicherten key aus storage (state = true / null)
+    const storedChartState = sessionStorage.getItem("isChartOpen");
+
+    // wenn key existiert -> state = true
+    if (storedChartState) setIsChartOpen(true);
+  }, []); // läuft nur 1x bei 1. render
+
+  // *** [speichern]: bei Änderung
+  useEffect(() => {
+    // (nur) wenn state = true -> key in storage speichern
+    if (isChartOpen) {
+      sessionStorage.setItem("isChartOpen", "true");
+    } else {
+      // ansonsten key löschen (damit default = false)
+      sessionStorage.removeItem("isChartOpen");
+    }
+  }, [isChartOpen]); // läuft nur, wenn sich state ändert (= true)
+
+  // *** [ 3. TYPE-filter ] ****************************************************************
+  // *** [abrufen]
+  useEffect(() => {
+    const storedTypeFilter = sessionStorage.getItem("typeFilter");
+    if (storedTypeFilter !== "Income" && storedTypeFilter !== "Expense") return;
+
+    setTypeFilter(storedTypeFilter);
+  }, []);
+
+  // *** [speichern]
+  useEffect(() => {
+    if (typeFilter) {
+      sessionStorage.setItem("typeFilter", typeFilter);
+    } else {
+      sessionStorage.removeItem("typeFilter");
+    }
+  }, [typeFilter]);
+
+  // ***************************************************************************************
+
+  // *** [ fetch ]
   const { data: transactions, error: errorTransactions } =
     useSWR("/api/transactions");
   const { data: categories, error: errorCategories } =
     useSWR("/api/categories");
 
+  // *** [ guards ]
   if (errorTransactions || errorCategories) return <h3>Failed to load data</h3>;
-  if (!transactions || !categories) return <h3>Loading...</h3>;
+  if (!transactions || !categories) return <h3>Loading ...</h3>;
 
-  // *** SORTIERTE transactions ***
-  // erst transactions nach Datum absteigend sortieren
-  // (Date-Objekt: nimmt sonst aktuelles Datum nicht mit rein)
-  const sortedTransactions = transactions.sort(
+  // *** [ abgeleitete Daten ] *************************************************************
+  // *** [ 1. TRANSACTIONS ] sortieren & filtern *******************************************
+  // *** [sortieren]: nach Datum absteigend
+  const sortedTransactions = [...transactions].sort(
     (a, b) => new Date(b.date) - new Date(a.date)
   );
 
-  // *** SORTIERTE & GEFILTERTE transactions ***
-  // danach auf sortedTransactions type- & date-filter anwenden
+  // für DateFilterPopup / handleDateChange: from/to-default
+  // const latestDate = sortedTransactions[0]?.date.split("T")[0]; // neuste transaction
+  const earliestDate =
+    sortedTransactions[sortedTransactions.length - 1]?.date.split("T")[0]; // älteste transaction
+  const today = new Date().toISOString().split("T")[0];
+  const defaultFrom = earliestDate ?? null;
+  const defaultTo = today;
+
+  // *** [filtern]: type- & date-filter auf sortedTransactions
+  const fromDate =
+    (dateFilter.from ?? defaultFrom)
+      ? new Date(dateFilter.from ?? defaultFrom)
+      : null;
+  const toDate =
+    (dateFilter.to ?? defaultTo) ? new Date(dateFilter.to ?? defaultTo) : null;
+  if (toDate) toDate.setHours(23, 59, 59, 999); // end of day: ganzen Tag einschließen (23:59:59)
+
   const filteredTransactions = sortedTransactions.filter((transaction) => {
-    const typeMatches = !filterType || transaction.type === filterType; // type-filter
+    // type-filter
+    const typeMatches = !typeFilter || transaction.type === typeFilter;
 
+    // date-filter
     const transactionDate = new Date(transaction.date);
-    const fromDate = filterDate.from ? new Date(filterDate.from) : null;
-    const toDate = filterDate.to ? new Date(filterDate.to) : null;
-
     const dateMatches =
       (!fromDate || transactionDate >= fromDate) &&
-      (!toDate || transactionDate <= toDate); // date-filter
+      (!toDate || transactionDate <= toDate);
 
     return typeMatches && dateMatches;
   });
 
-  // *** SORTIERTE & GEFILTERTE categories mit totalAmount ***
-  // totalAmounts pro category basierend auf filteredTransactions summieren
-  const categoriesWithAmounts = categories.map((category) => {
-    const totalAmount = filteredTransactions
-      .filter(
-        (transaction) =>
-          transaction.category &&
-          transaction.category._id.toString() === category._id.toString() // !!
-      ) // nur die ta filtern, die dieser ca zugehören
-      .reduce((sum, transaction) => sum + transaction.amount, 0); // amounts dieser ta summieren
+  // *** [ 2. CATEGORIES ] total amount ****************************************************
+  // *** [object für Summe pro category]: key = categoryId (string) | value = aufsummierter Betrag (number)
+  const totalsByCategoryId = {};
 
-    return { ...category, totalAmount }; // ca mit totalAmount
+  // *** [transactions]: 1x durch alle aktuell sichtbaren transactions
+  // *** -> zu welcher category gehört transaction? -> amount zu passender category-Summe addieren
+  filteredTransactions.forEach((transaction) => {
+    const categoryId = transaction.category?._id?.toString(); // category-ID aus transaction
+
+    if (!categoryId) return; // falls keine category in transaction -> überspringen
+    if (!totalsByCategoryId[categoryId]) {
+      totalsByCategoryId[categoryId] = 0; // falls category noch nicht in totalsByCategoryId -> Summe = 0
+    }
+
+    totalsByCategoryId[categoryId] += transaction.amount; // amount von transaction zu Summe in totalsByCategoryId
   });
 
-  // chartData basierend auf filterType
-  const chartData = filterType
+  // *** [categories]: 1x durch alle categories
+  // *** -> zu jeder category passende Summe aus totalsByCategoryId dazu
+  const categoriesWithAmounts = categories.map((category) => {
+    const categoryId = category._id.toString(); // category-ID aus category
+    return { ...category, totalAmount: totalsByCategoryId[categoryId] || 0 }; // Kopie ursprüngl. category-object + Summe
+  });
+
+  // *** [ 3. BALANCE-DATA & CHART-DATA ] **************************************************
+  // *** [totals]
+  let totalIncome = 0;
+  let totalExpense = 0;
+
+  // *** 1x durch alle categories mit total amount
+  categoriesWithAmounts.forEach((category) => {
+    // total amount von category zu total income/expense addieren
+    if (category.type === "Income") totalIncome += category.totalAmount;
+    if (category.type === "Expense") totalExpense += category.totalAmount;
+  });
+
+  // *** [balance-data] value aus totals
+  const totalBalanceValue =
+    typeFilter === "Income"
+      ? totalIncome
+      : typeFilter === "Expense"
+        ? totalExpense
+        : totalIncome - totalExpense;
+
+  const totalBalanceLabel =
+    typeFilter === "Income"
+      ? "Total Income"
+      : typeFilter === "Expense"
+        ? "Total Expense"
+        : "Total Balance";
+
+  // *** [chart-data] values aus totals
+  // *** main view: total balance (expenses + remaining income) // type-filter: income-/expense-categories
+  const chartData = typeFilter
     ? categoriesWithAmounts
         .filter(
-          (category) => category.totalAmount > 0 && category.type === filterType
-        ) // keine leeren & mit passendem type
+          (category) => category.type === typeFilter && category.totalAmount > 0
+        )
         .map((category) => ({
           id: category._id,
           label: category.name,
@@ -78,151 +201,129 @@ export default function TransactionsPage() {
         {
           id: "Expenses",
           label: "Expenses",
-          value: categoriesWithAmounts
-            .filter((category) => category.type === "Expense")
-            .reduce((sum, category) => sum + category.totalAmount, 0), // total expenses
+          value: totalExpense,
           color: "var(--expense-color)",
         },
         {
           id: "Remaining Income",
           label: "Remaining Income",
-          value:
-            categoriesWithAmounts
-              .filter((category) => category.type === "Income")
-              .reduce((sum, category) => sum + category.totalAmount, 0) -
-            categoriesWithAmounts
-              .filter((category) => category.type === "Expense")
-              .reduce((sum, category) => sum + category.totalAmount, 0), // remaining income = total incomes - total expenses
+          value: totalIncome - totalExpense,
           color: "var(--income-color)",
         },
       ];
 
-  // für tooltip %: Basis type
-  const totalFilteredValue = chartData.reduce(
-    (sum, data) => sum + data.value,
+  // *** [tooltip %] aus chart-data
+  const chartTotalValue = chartData.reduce(
+    (sum, segment) => sum + segment.value,
     0
   );
 
-  // für Popup from/to: ungefilterte list
-  const earliestDate =
-    transactions[transactions.length - 1]?.date.split("T")[0]; // neuste transaction
-  const latestDate = transactions[0]?.date.split("T")[0]; // älterste transaction
+  function getChartPercentage(value) {
+    if (!chartTotalValue) return 0; // damit nicht durch 0 geteilt wird
+    return Math.round((value / chartTotalValue) * 100);
+  }
+
+  // ***************************************************************************************
+
+  function toggleChart() {
+    setIsChartOpen((prevState) => !prevState);
+  }
 
   function toggleTypeFilter(type) {
-    setFilterType((prevFilterType) => (prevFilterType === type ? null : type));
+    setTypeFilter((prevState) => (prevState === type ? null : type));
   }
 
   function toggleDateFilterPopup() {
-    setShowDateFilter((prevState) => !prevState);
-
-    // Popup from/to default: falls bereits eingestellte Werte gibt, dann diese, ansonsten ungefilterte list
-    if (!showDateFilter) {
-      setFilterDate((prev) => ({
-        from: prev.from ?? earliestDate,
-        to: prev.to ?? latestDate,
-      }));
-    }
+    setDateFilterPopup((prevState) => !prevState);
   }
 
   function handleDateChange(event) {
     const { name, value } = event.target;
-    setFilterDate((prev) => ({ ...prev, [name]: value }));
+
+    const defaultValue = name === "from" ? defaultFrom : defaultTo;
+    const dateFilterValue = !value || value === defaultValue ? null : value; // wenn default -> null
+
+    setDateFilter((prevState) => ({ ...prevState, [name]: dateFilterValue }));
   }
 
   function clearDateFilter() {
-    setFilterDate({ from: null, to: null });
+    setDateFilter({ from: null, to: null });
   }
 
-  // Total Balance basierend auf type-filter
-  const totalBalanceLabel =
-    filterType === "Income"
-      ? "Total Incomes"
-      : filterType === "Expense"
-      ? "Total Expenses"
-      : "Total Balance";
-
-  const totalBalanceValue = categoriesWithAmounts
-    .filter((category) => (filterType ? category.type === filterType : true))
-    .reduce(
-      (sum, category) =>
-        sum +
-        category.totalAmount *
-          (category.type === "Expense" && !filterType ? -1 : 1),
-      0
-    );
-
   return (
-    <PageWrapper>
+    <>
       <ContentContainer>
         <h1>Transactions</h1>
 
-        {chartData.length > 0 && (
-          <ChartContainer>
-            <ResponsivePie
-              data={chartData}
-              colors={{ datum: "data.color" }}
-              innerRadius={0.5} // 50 % ausgeschnitten
-              padAngle={2} // Abstand zwischen Segmenten
-              cornerRadius={3} // rundere Ecken der Segmente
-              arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
-              animate={false} // Segmente springen nicht
-              enableArcLabels={false} // keine Zahlen im Segment
-              tooltip={({ datum }) => {
-                const percentage = (
-                  (datum.value / totalFilteredValue) *
-                  100
-                ).toFixed(0);
-                return (
+        {isChartOpen && chartData.length > 0 && (
+          <ChartSection>
+            <PieWrapper>
+              <ResponsivePie
+                data={chartData}
+                colors={{ datum: "data.color" }}
+                innerRadius={0.5} // 50 % ausgeschnitten
+                padAngle={2} // Abstand zwischen Segmenten
+                cornerRadius={3} // rundere Ecken der Segmente
+                arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
+                animate={false} // Segmente springen nicht
+                enableArcLabels={false} // keine Zahlen im Segment
+                tooltip={({ datum }) => (
                   <div>
-                    {datum.label}: <strong>{percentage} %</strong>
+                    {datum.label}:{" "}
+                    <strong>{getChartPercentage(datum.value)} %</strong>
                   </div>
-                );
-              }}
-            />
-          </ChartContainer>
+                )}
+              />
+            </PieWrapper>
+
+            <BalanceContainer>
+              <p>{totalBalanceLabel}</p>
+              <p className={`value ${totalBalanceValue < 0 ? "negative" : ""}`}>
+                {totalBalanceValue.toLocaleString("de-DE", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                €
+              </p>
+            </BalanceContainer>
+          </ChartSection>
         )}
 
-        <BalanceContainer>
-          <p>{totalBalanceLabel}</p>
-          <p className="value">
-            {totalBalanceValue.toLocaleString("de-DE", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{" "}
-            €
-          </p>
-        </BalanceContainer>
+        <FilterSection>
+          <IconContainer>
+            <IconWrapper
+              onClick={toggleDateFilterPopup}
+              className={isDateFilterActive ? "active" : ""}
+            >
+              <DateIcon className="date" />
+            </IconWrapper>
 
-        <ButtonContainer>
-          <IconWrapper
-            onClick={toggleDateFilterPopup}
-            className={
-              (filterDate.from !== earliestDate ||
-                filterDate.to !== latestDate) &&
-              filterDate.from &&
-              filterDate.to
-                ? "active"
-                : ""
-            }
-          >
-            <DateFilterIcon />
-          </IconWrapper>
+            <IconWrapper
+              onClick={toggleChart}
+              className={isChartOpen ? "active" : ""}
+            >
+              <ChartIcon className="chart" />
+            </IconWrapper>
+          </IconContainer>
 
-          <button
-            onClick={() => toggleTypeFilter("Income")}
-            className={filterType === "Income" ? "active" : "incomes"}
-          >
-            Incomes
-          </button>
-          <button
-            onClick={() => toggleTypeFilter("Expense")}
-            className={filterType === "Expense" ? "active" : ""}
-          >
-            Expenses
-          </button>
-        </ButtonContainer>
+          <ButtonContainer>
+            <button
+              onClick={() => toggleTypeFilter("Income")}
+              className={typeFilter === "Income" ? "active" : ""}
+            >
+              Incomes
+            </button>
 
-        {showDateFilter && (
+            <button
+              onClick={() => toggleTypeFilter("Expense")}
+              className={typeFilter === "Expense" ? "active" : ""}
+            >
+              Expenses
+            </button>
+          </ButtonContainer>
+        </FilterSection>
+
+        {dateFilterPopup && (
           <>
             <Overlay onClick={toggleDateFilterPopup} />
 
@@ -232,15 +333,16 @@ export default function TransactionsPage() {
                 type="date"
                 id="from"
                 name="from"
-                value={filterDate.from || ""} // vorherige Auswahl oder leer
+                value={(dateFilter.from ?? defaultFrom) || ""} // vorherige Auswahl oder default
                 onChange={handleDateChange}
               />
+
               <label htmlFor="to">To:</label>
               <input
                 type="date"
                 id="to"
                 name="to"
-                value={filterDate.to || ""} // vorherige Auswahl oder leer
+                value={(dateFilter.to ?? defaultTo) || ""} // vorherige Auswahl oder default
                 onChange={handleDateChange}
               />
 
@@ -251,7 +353,7 @@ export default function TransactionsPage() {
 
         <StyledList>
           {filteredTransactions.map((transaction) => (
-            <li key={transaction._id}>
+            <Row key={transaction._id}>
               <StyledLink href={`/transactions/${transaction._id}`}>
                 <p className="date">
                   {new Date(transaction.date).toLocaleDateString("de-DE", {
@@ -262,15 +364,15 @@ export default function TransactionsPage() {
                 </p>
 
                 <ColorTag
-                  $filterType={filterType}
+                  $typeFilter={typeFilter}
                   $transactionType={transaction.type}
                   $categoryColor={
                     transaction.category ? transaction.category.color : "BLACK"
                   }
                 />
 
-                <p>{transaction.description}</p>
-                <p>
+                <p className="description">{transaction.description}</p>
+                <p className="category">
                   {transaction.category
                     ? transaction.category.name
                     : "No Category"}
@@ -283,159 +385,158 @@ export default function TransactionsPage() {
                   €
                 </p>
               </StyledLink>
-            </li>
+            </Row>
           ))}
         </StyledList>
-
-        <Navbar />
       </ContentContainer>
-    </PageWrapper>
+
+      <Navbar />
+    </>
   );
 }
 
 const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  position: fixed; // bei scroll im viewport
+  top: 0; // Start oberer Rand
+  left: 0; // Start linker Rand
+  z-index: 9; // über Seite, unter Popup
+
   background: rgba(0, 0, 0, 0.6); // abgedunkelt
-  z-index: 9; // Popup über content
+  width: 100%; // über komplette Breite
+  height: 100%; // über komplette Höhe
 `;
 
 const DateFilterPopup = styled.div`
-  position: fixed;
+  position: fixed; // bei scroll im viewport
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: var(--button-background-color);
-  color: var(--button-text-color);
-  padding: 20px;
-  border-radius: 15px;
   z-index: 10; // Popup über Overlay
+
+  background-color: var(--button-background-color);
+  width: 172px;
+  padding: 1.2rem 1.7rem 1.7rem 1.7rem; // Innenabstand
+  border-radius: 1.5rem; // abgerundete Ecken
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  align-items: center;
+  flex-direction: column; // content untereinander
+
+  label {
+    font-weight: bold;
+    margin-bottom: 0.5rem; // Abstand input
+  }
+
+  input {
+    height: 1.5rem;
+    border-radius: 0.5rem; // abgerundete Ecken
+    border: 0.07rem solid var(--button-hover-color);
+    accent-color: var(
+      --button-hover-color // Firefox: wenn angeklickt, kein blauer Rahmen
+    );
+    cursor: text;
+  }
+
+  input#from {
+    margin-bottom: 0.8rem; // Abstand #to
+  }
 
   button {
-    background-color: var(--button-active-color);
-    color: var(--button-active-text-color);
-    width: 50px;
-    height: 30px;
-    padding: 5px 10px;
-    border-radius: 10px;
+    align-self: center;
     border: none;
+    border-radius: 17px;
+    width: 55px;
+    height: 30px;
     cursor: pointer;
+    font-weight: bold;
+    background-color: var(--secondary-text-color);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 1);
+    margin-top: 1.5rem; // Abstand input
 
     &:hover {
       transform: scale(1.07);
-      font-weight: bold;
+      // transform-origin: center;
     }
   }
 `;
 
-const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column; // vertikal angeordnet
-  align-items: center; // ContentContainer vertikal zentriert
-  width: 100%;
-  height: 100vh; // gesamte Höhe von Viewport
-`;
+// ******************************************************************************
 
 const ContentContainer = styled.div`
-  width: 100%;
-  max-width: 800px; // wegen list & buttons
+  padding: 20px 20px 83px 20px; // Nav 75px // Abstand Bildschirmrand
+  max-width: 500px; // Breite von list
   margin: 0 auto; // content horizontal zentriert
-  display: flex;
-  flex-direction: column; // content untereinander
-  align-items: center; // content zentriert
-  padding: 20px 20px 75px 20px; // 75px: Nav
 
   h1 {
-    margin-bottom: 20px;
+    text-align: center;
+    margin-bottom: 1.5rem;
   }
 `;
 
-const ChartContainer = styled.div`
-  height: 200px;
-  width: 200px;
+const ChartSection = styled.div`
+  display: flex;
+  flex-direction: column; // PieWrapper + BalanceContainer untereinander
+  max-width: 275px; // schmaler als FilterSection
+  margin: 0 auto 1.5rem auto; // Abstand FilterSection, horizontal zentriert
+`;
 
-  @media (max-width: 600px) {
-    height: 150px;
-    width: 150px;
-  }
+const PieWrapper = styled.div`
+  height: 150px;
+  width: 150px;
+  margin: 0 auto; // horizontal zentriert
 `;
 
 const BalanceContainer = styled.div`
-  align-self: flex-end; // rechts im ContentContainer, nicht zentriert
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  // margin: 0 30px 0 0;
+  align-self: flex-end; // rechts in ChartSection
+  text-align: center; // content horizontal zentriert
 
   p.value {
     font-weight: bold;
   }
+
+  p.value.negative {
+    color: var(--expense-color);
+  }
 `;
 
-const ButtonContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  margin: 20px 0;
+const FilterSection = styled.div`
+  display: flex; // IconContainer + ButtonContainer nebeneinander
+  justify-content: space-between; // icon links, button rechts
 
-  button {
-    background-color: var(--button-background-color);
-    color: var(--button-text-color);
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    width: 90px;
-    height: 30px;
-    padding: 5px 10px;
+  max-width: 400px; // schmaler als list
+  margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
+`;
 
-    &:hover {
-      transform: scale(1.07);
-      font-weight: bold;
-    }
-
-    &.active {
-      background-color: var(--button-active-color);
-      color: var(--button-active-text-color);
-      font-weight: bold;
-    }
-  }
-
-  button:nth-of-type(2) {
-    margin-left: 20px; // expenses-button
-  }
+const IconContainer = styled.div`
+  display: flex; // svgs nebeneinander
+  gap: 1rem; // für gap
 `;
 
 const IconWrapper = styled.div`
-  margin-right: auto; // links von liste
   background-color: var(--button-background-color);
   color: var(--button-text-color);
-  width: 30px;
+  width: 32px;
   height: 30px;
   border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; // wegen Zentrierung von svgs
+  align-items: center; // vertikal zentriert
+  justify-content: center; // horizontal zentriert
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
-  svg {
+  svg.date {
+    width: 18px;
+    height: 18px;
+  }
+
+  svg.chart {
     width: 20px;
     height: 20px;
-    stroke-width: ${(props) => (props.className === "active" ? "2.3" : "1.5")};
-
-    &:hover {
-      stroke-width: 2.3;
-    }
   }
 
   &:hover {
     transform: scale(1.07);
+    color: var(--primary-text-color);
   }
 
   &.active {
@@ -444,75 +545,111 @@ const IconWrapper = styled.div`
   }
 `;
 
-const StyledList = styled.ul`
-  list-style-type: none;
-  width: 100%;
-  // max-width: 600px; // ist zu ContentContainer ausgelagert
+const ButtonContainer = styled.div`
+  display: flex; // für gap
+  gap: 1rem;
 
-  li {
-    background-color: var(--list-item-background);
-    padding: 10px 15px;
-    margin: 0 0 10px 0;
+  button {
+    background-color: var(--button-background-color);
+    color: var(--button-text-color);
+    border: none;
+    width: 90px;
+    height: 30px;
     border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
-    // min-width: 500px; // wg. content
-    min-width: 0;
+    &:hover {
+      transform: scale(1.04);
+      color: var(--primary-text-color);
+    }
 
-    @media (max-width: 600px) {
-      padding: 8px 10px;
+    &.active {
+      background-color: var(--button-active-color);
+      color: var(--button-active-text-color);
     }
   }
 `;
 
+// ******************************************************************************
+
+const StyledList = styled.ul`
+  list-style-type: none;
+  display: grid; //    date | ColorTag | description | category | amount
+  grid-template-columns:
+    minmax(33px, max-content) 5px minmax(60px, 1fr) minmax(0, max-content)
+    74px;
+  align-items: center; // content in der Zeile vertikal zentriert
+  gap: 0.5rem;
+`;
+
+const Row = styled.li`
+  display: contents; // childs direkte grid-items von StyledList
+`;
+
 const StyledLink = styled(Link)`
-  display: grid;
-  grid-template-columns: 90px 20px 1fr 1fr 100px; // Desktop: NICHT mehr ändern!
-  gap: 5px;
-  align-items: center; // wg. ColorTag
   text-decoration: none;
+  display: contents; // date, ColorTag, description, category, amount -> grid
 
-  @media (max-width: 600px) {
-    grid-template-columns:
-      minmax(65px, auto) 10px minmax(90px, 1fr) minmax(72px, 1fr)
-      70px;
-    gap: 2px;
+  p {
+    font-size: 0.8rem;
+  }
 
-    p {
-      font-size: 0.75rem;
-    }
+  p.date {
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  p.description {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  p.category {
+    font-size: 0.6rem;
+    opacity: 0.6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   p.amount {
     text-align: right;
     font-weight: bold;
+    white-space: nowrap;
   }
 
   &:hover {
-    font-weight: bold;
+    p {
+      transform: scale(1.03);
+      color: var(--primary-text-color);
+    }
 
-    span,
-    p.amount {
-      transform: scale(1.07);
+    p.description {
+      transform-origin: left center; // sonst zu arg links
+    }
+
+    p.category {
+      opacity: 1;
+    }
+
+    span {
+      transform: scale(1.2);
     }
   }
 `;
 
 const ColorTag = styled.span`
-  width: 10px;
-  height: 10px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  justify-self: center;
-  margin-right: 7px;
 
   background-color: ${(props) =>
-    props.$filterType // wenn type-filter aktiv
+    props.$typeFilter // wenn type-filter aktiv
       ? props.$categoryColor // dann category color
-      : props.$transactionType === "Income" // main view: type color
-      ? "var(--income-color)"
-      : "var(--expense-color)"};
-
-  @media (max-width: 600px) {
-    width: 8px;
-    height: 8px;
-  }
+      : props.$transactionType === "Income" // type color (main view)
+        ? "var(--income-color)"
+        : "var(--expense-color)"};
 `;
