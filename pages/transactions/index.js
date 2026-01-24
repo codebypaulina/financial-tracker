@@ -69,7 +69,7 @@ export default function TransactionsPage() {
   // *** [ 3. TYPE-filter ] ****************************************************************
   // *** [abrufen]
   useEffect(() => {
-    const storedTypeFilter = sessionStorage.getItem("typeFilter");
+    const storedTypeFilter = sessionStorage.getItem("transactions:typeFilter");
     if (storedTypeFilter !== "Income" && storedTypeFilter !== "Expense") return;
 
     setTypeFilter(storedTypeFilter);
@@ -78,9 +78,9 @@ export default function TransactionsPage() {
   // *** [speichern]
   useEffect(() => {
     if (typeFilter) {
-      sessionStorage.setItem("typeFilter", typeFilter);
+      sessionStorage.setItem("transactions:typeFilter", typeFilter);
     } else {
-      sessionStorage.removeItem("typeFilter");
+      sessionStorage.removeItem("transactions:typeFilter");
     }
   }, [typeFilter]);
 

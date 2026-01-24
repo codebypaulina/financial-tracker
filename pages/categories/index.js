@@ -1,9 +1,9 @@
-import Navbar from "@/components/Navbar";
 import useSWR from "swr";
-import Link from "next/link";
-import styled from "styled-components";
-import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import styled from "styled-components";
+import Navbar from "@/components/Navbar";
 
 // hier muss dynamischer Import, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -12,51 +12,66 @@ const ResponsivePie = dynamic(
 );
 
 export default function CategoriesPage() {
-  const [filterState, setFilterState] = useState(null);
+  const [typeFilter, setTypeFilter] = useState(null);
 
+  // *** [ session storage ] ***************************************************************
+  // *** [ TYPE-filter ] *******************************************************************
+  // *** [abrufen]
   useEffect(() => {
-    const storedFilterState = sessionStorage.getItem("filterState");
-    if (storedFilterState) {
-      setFilterState(storedFilterState);
-    }
+    const storedTypeFilter = sessionStorage.getItem("categories:typeFilter");
+    if (storedTypeFilter !== "Income" && storedTypeFilter !== "Expense") return;
+
+    setTypeFilter(storedTypeFilter);
   }, []);
 
+  // *** [speichern]
   useEffect(() => {
-    if (filterState) {
-      sessionStorage.setItem("filterState", filterState);
+    if (typeFilter) {
+      sessionStorage.setItem("categories:typeFilter", typeFilter);
     } else {
-      sessionStorage.removeItem("filterState"); // vermeidet Probleme durch veraltete/leere Daten
+      sessionStorage.removeItem("categories:typeFilter");
     }
-  }, [filterState]);
+  }, [typeFilter]);
 
+  // ***************************************************************************************
+
+  // *** [ fetch ]
   const { data: categories, error } = useSWR("/api/categories");
-  if (error) return <h3>Failed to load categories</h3>;
-  if (!categories) return <h3>Loading...</h3>;
 
-  // chart
-  const totalIncome = categories
+  // *** [ guards ]
+  if (error) return <h3>Failed to load categories</h3>;
+  if (!categories) return <h3>Loading ...</h3>;
+
+  // *** [ abgeleitete Daten ] *************************************************************
+  // *** [ 1. CATEGORIES ] sortieren & filtern *********************************************
+  // *** [sortieren]: nach total amount absteigend
+  const sortedCategories = [...categories].sort(
+    (a, b) => b.totalAmount - a.totalAmount
+  );
+
+  // *** [filtern]: type-filter auf sortedCategories
+  const filteredCategories = typeFilter
+    ? sortedCategories.filter((category) => category.type === typeFilter)
+    : sortedCategories;
+
+  // *** [ 2. CHART ] **********************************************************************
+  // *** [totals]
+  const totalIncome = sortedCategories
     .filter((category) => category.type === "Income")
     .reduce((sum, category) => sum + category.totalAmount, 0);
 
-  const totalExpense = categories
+  const totalExpense = sortedCategories
     .filter((category) => category.type === "Expense")
     .reduce((sum, category) => sum + category.totalAmount, 0);
 
   const remainingIncome = totalIncome - totalExpense;
 
-  // tooltip (%)
-  const totalFilteredValue =
-    filterState === "Expense" ? totalExpense : totalIncome;
-
-  // chartData basierend auf filterState
-  const filteredChartData = filterState
-    ? categories
-        .filter(
-          (category) =>
-            category.totalAmount > 0 && category.type === filterState
-        )
+  // *** [chart-data] values aus totals
+  const chartData = typeFilter
+    ? filteredCategories
+        .filter((category) => category.totalAmount > 0)
         .map((category) => ({
-          id: category.id,
+          id: category._id,
           label: category.name,
           value: category.totalAmount,
           color: category.color,
@@ -76,15 +91,21 @@ export default function CategoriesPage() {
         },
       ];
 
-  // categories gefiltert nach type im filterState
-  const filteredCategories = filterState
-    ? categories.filter((category) => category.type === filterState)
-    : categories;
+  // *** [tooltip %] aus chart-data
+  const chartTotalValue = chartData.reduce(
+    (sum, segment) => sum + segment.value,
+    0
+  );
+
+  function getChartPercentage(value) {
+    if (!chartTotalValue) return 0;
+    return Math.round((value / chartTotalValue) * 100);
+  }
+
+  // ***************************************************************************************
 
   function toggleTypeFilter(type) {
-    setFilterState((prevFilterState) =>
-      prevFilterState === type ? null : type
-    );
+    setTypeFilter((prevState) => (prevState === type ? null : type));
   }
 
   return (
@@ -92,10 +113,10 @@ export default function CategoriesPage() {
       <ContentContainer>
         <h1>Categories</h1>
 
-        {filteredChartData.length > 0 && (
+        {chartData.length > 0 && (
           <ChartContainer>
             <ResponsivePie
-              data={filteredChartData}
+              data={chartData}
               colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben für Segmente
               innerRadius={0.5} // 50 % ausgeschnitten
               padAngle={2} // Abstand zwischen Segmenten
@@ -103,17 +124,12 @@ export default function CategoriesPage() {
               arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
               animate={false} // Segmente springen nicht
               enableArcLabels={false} // keine Zahlen im Segment
-              tooltip={({ datum }) => {
-                const percentage = (
-                  (datum.value / totalFilteredValue) *
-                  100
-                ).toFixed(0);
-                return (
-                  <div>
-                    {datum.label}: <strong>{percentage} %</strong>
-                  </div>
-                );
-              }}
+              tooltip={({ datum }) => (
+                <div>
+                  {datum.label}:{" "}
+                  <strong>{getChartPercentage(datum.value)} %</strong>
+                </div>
+              )}
             />
           </ChartContainer>
         )}
@@ -132,58 +148,56 @@ export default function CategoriesPage() {
         <ButtonContainer>
           <button
             onClick={() => toggleTypeFilter("Income")}
-            className={filterState === "Income" ? "active" : ""}
+            className={typeFilter === "Income" ? "active" : ""}
           >
             Incomes
           </button>
           <button
             onClick={() => toggleTypeFilter("Expense")}
-            className={filterState === "Expense" ? "active" : ""}
+            className={typeFilter === "Expense" ? "active" : ""}
           >
             Expenses
           </button>
         </ButtonContainer>
 
         <StyledList>
-          {filteredCategories
-            .sort((a, b) => b.totalAmount - a.totalAmount) // nach totalAmount absteigend sortiert
-            .map((category) => (
-              <li
-                key={category._id}
-                $isNull={category.totalAmount <= 0}
-                style={{
-                  backgroundColor:
-                    category.totalAmount <= 0
-                      ? "#242424"
-                      : "var(--list-item-background)",
-                }}
-              >
-                <ColorTag
-                  color={
-                    filterState
-                      ? category.color
-                      : category.type === "Income"
+          {filteredCategories.map((category) => (
+            <li
+              key={category._id}
+              $isNull={category.totalAmount <= 0}
+              style={{
+                backgroundColor:
+                  category.totalAmount <= 0
+                    ? "#242424"
+                    : "var(--list-item-background)",
+              }}
+            >
+              <ColorTag
+                color={
+                  typeFilter
+                    ? category.color
+                    : category.type === "Income"
                       ? "var(--income-color)"
                       : "var(--expense-color)"
-                  }
-                  $isNull={category.totalAmount <= 0}
-                />
+                }
+                $isNull={category.totalAmount <= 0}
+              />
 
-                <StyledLink
-                  href={`/categories/${category._id}?from=/categories`} // Eintrittspunkt CategoryDetailsPage  ;  "?from/categories": CategoriesPage als Herkunft merken, um nach delete von category wieder hierhin zurück (anstatt zur jetzt gelöschten CategoryDetailsPage)
-                  $isNull={category.totalAmount <= 0}
-                >
-                  <p>{category.name}</p>
-                  <p className="amount">
-                    {category.totalAmount.toLocaleString("de-DE", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
-                    €
-                  </p>
-                </StyledLink>
-              </li>
-            ))}
+              <StyledLink
+                href={`/categories/${category._id}?from=/categories`} // Eintrittspunkt CategoryDetailsPage  ;  "?from/categories": CategoriesPage als Herkunft merken, um nach delete von category wieder hierhin zurück (anstatt zur jetzt gelöschten CategoryDetailsPage)
+                $isNull={category.totalAmount <= 0}
+              >
+                <p>{category.name}</p>
+                <p className="amount">
+                  {category.totalAmount.toLocaleString("de-DE", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </p>
+              </StyledLink>
+            </li>
+          ))}
         </StyledList>
 
         <Navbar />
