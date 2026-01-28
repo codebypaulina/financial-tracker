@@ -49,7 +49,7 @@ export default function TransactionsPage() {
   // *** [abrufen]
   useEffect(() => {
     // holt gespeicherten key aus storage (state = true / null)
-    const storedChartState = sessionStorage.getItem("isChartOpen");
+    const storedChartState = sessionStorage.getItem("transactions:isChartOpen");
 
     // wenn key existiert -> state = true
     if (storedChartState) setIsChartOpen(true);
@@ -59,10 +59,10 @@ export default function TransactionsPage() {
   useEffect(() => {
     // (nur) wenn state = true -> key in storage speichern
     if (isChartOpen) {
-      sessionStorage.setItem("isChartOpen", "true");
+      sessionStorage.setItem("transactions:isChartOpen", "true");
     } else {
       // ansonsten key löschen (damit default = false)
-      sessionStorage.removeItem("isChartOpen");
+      sessionStorage.removeItem("transactions:isChartOpen");
     }
   }, [isChartOpen]); // läuft nur, wenn sich state ändert (= true)
 

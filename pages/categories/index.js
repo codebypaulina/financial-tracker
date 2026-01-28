@@ -17,7 +17,28 @@ export default function CategoriesPage() {
   const [isChartOpen, setIsChartOpen] = useState(false);
 
   // *** [ session storage ] ***************************************************************
-  // *** [ TYPE-filter ] *******************************************************************
+  // *** [ 1. CHART-state ] ****************************************************************
+  // *** [abrufen]
+  useEffect(() => {
+    // holt gespeicherten key aus storage (state = true / null)
+    const storedChartState = sessionStorage.getItem("categories:isChartOpen");
+
+    // wenn key existiert -> state = true
+    if (storedChartState) setIsChartOpen(true);
+  }, []); // läuft nur 1x bei 1. render
+
+  // *** [speichern]: bei Änderung
+  useEffect(() => {
+    // (nur) wenn state = true -> key in storage speichern
+    if (isChartOpen) {
+      sessionStorage.setItem("categories:isChartOpen", "true");
+    } else {
+      // ansonsten key löschen (damit default = false)
+      sessionStorage.removeItem("categories:isChartOpen");
+    }
+  }, [isChartOpen]); // läuft nur, wenn sich state ändert (= true)
+
+  // *** [ 2. TYPE-filter ] ****************************************************************
   // *** [abrufen]
   useEffect(() => {
     const storedTypeFilter = sessionStorage.getItem("categories:typeFilter");
