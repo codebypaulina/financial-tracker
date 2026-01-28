@@ -109,41 +109,43 @@ export default function CategoriesPage() {
   }
 
   return (
-    <PageWrapper>
+    <>
       <ContentContainer>
         <h1>Categories</h1>
 
         {chartData.length > 0 && (
-          <ChartContainer>
-            <ResponsivePie
-              data={chartData}
-              colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben für Segmente
-              innerRadius={0.5} // 50 % ausgeschnitten
-              padAngle={2} // Abstand zwischen Segmenten
-              cornerRadius={3} // rundere Ecken der Segmente
-              arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
-              animate={false} // Segmente springen nicht
-              enableArcLabels={false} // keine Zahlen im Segment
-              tooltip={({ datum }) => (
-                <div>
-                  {datum.label}:{" "}
-                  <strong>{getChartPercentage(datum.value)} %</strong>
-                </div>
-              )}
-            />
-          </ChartContainer>
-        )}
+          <ChartSection>
+            <PieWrapper>
+              <ResponsivePie
+                data={chartData}
+                colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben für Segmente
+                innerRadius={0.5} // 50 % ausgeschnitten
+                padAngle={2} // Abstand zwischen Segmenten
+                cornerRadius={3} // rundere Ecken der Segmente
+                arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
+                animate={false} // Segmente springen nicht
+                enableArcLabels={false} // keine Zahlen im Segment
+                tooltip={({ datum }) => (
+                  <div>
+                    {datum.label}:{" "}
+                    <strong>{getChartPercentage(datum.value)} %</strong>
+                  </div>
+                )}
+              />
+            </PieWrapper>
 
-        <BalanceContainer>
-          <p>Total Balance</p>
-          <p className="value">
-            {remainingIncome.toLocaleString("de-DE", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{" "}
-            €
-          </p>
-        </BalanceContainer>
+            <BalanceContainer>
+              <p>Total Balance</p>
+              <p className={`value ${remainingIncome < 0 ? "negative" : ""}`}>
+                {remainingIncome.toLocaleString("de-DE", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                €
+              </p>
+            </BalanceContainer>
+          </ChartSection>
+        )}
 
         <ButtonContainer>
           <button
@@ -152,6 +154,7 @@ export default function CategoriesPage() {
           >
             Incomes
           </button>
+
           <button
             onClick={() => toggleTypeFilter("Expense")}
             className={typeFilter === "Expense" ? "active" : ""}
@@ -162,31 +165,16 @@ export default function CategoriesPage() {
 
         <StyledList>
           {filteredCategories.map((category) => (
-            <li
-              key={category._id}
-              $isNull={category.totalAmount <= 0}
-              style={{
-                backgroundColor:
-                  category.totalAmount <= 0
-                    ? "#242424"
-                    : "var(--list-item-background)",
-              }}
-            >
-              <ColorTag
-                color={
-                  typeFilter
-                    ? category.color
-                    : category.type === "Income"
-                      ? "var(--income-color)"
-                      : "var(--expense-color)"
-                }
-                $isNull={category.totalAmount <= 0}
-              />
-
+            <ListItem key={category._id} $empty={category.totalAmount <= 0}>
               <StyledLink
                 href={`/categories/${category._id}?from=/categories`} // Eintrittspunkt CategoryDetailsPage  ;  "?from/categories": CategoriesPage als Herkunft merken, um nach delete von category wieder hierhin zurück (anstatt zur jetzt gelöschten CategoryDetailsPage)
-                $isNull={category.totalAmount <= 0}
               >
+                <ColorTag
+                  $typeFilter={typeFilter}
+                  $categoryType={category.type}
+                  $categoryColor={category.color}
+                />
+
                 <p>{category.name}</p>
                 <p className="amount">
                   {category.totalAmount.toLocaleString("de-DE", {
@@ -196,174 +184,134 @@ export default function CategoriesPage() {
                   €
                 </p>
               </StyledLink>
-            </li>
+            </ListItem>
           ))}
         </StyledList>
-
-        <Navbar />
       </ContentContainer>
-    </PageWrapper>
+
+      <Navbar />
+    </>
   );
 }
 
-const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column; // vertikal angeordnet
-  align-items: center; // ContentContainer vertikal zentriert
-  width: 100%;
-  height: 100vh; // gesamte Höhe von Viewport
-`;
-
 const ContentContainer = styled.div`
-  width: 100%;
-  max-width: 800px; // wegen list & buttons
+  padding: 20px 20px 83px 20px; // Nav 75px // Abstand Bildschirmrand
+  max-width: 500px; // Breite von list
   margin: 0 auto; // content horizontal zentriert
-  display: flex;
-  flex-direction: column; // content untereinander
-  align-items: center; // content zentriert
-  padding: 20px 70px 75px 70px; // 75px: Nav
 
   h1 {
-    margin-bottom: 20px;
-  }
-
-  @media (max-width: 600px) {
-    padding: 20px 60px 75px 20px;
-  }
-
-  @media (max-width: 400px) {
-    padding: 20px 40px 75px 40px;
+    text-align: center;
+    margin-bottom: 1.5rem;
   }
 `;
 
-const ChartContainer = styled.div`
-  height: 200px;
-  width: 200px;
+const ChartSection = styled.div`
+  display: flex;
+  flex-direction: column; // PieWrapper + BalanceContainer untereinander
+  max-width: 275px; // schmaler als ButtonContainer
+  margin: 0 auto 1.5rem auto; // Abstand ButtonContainer, horizontal zentriert
+`;
 
-  @media (max-width: 600px) {
-    height: 150px;
-    width: 150px;
-  }
+const PieWrapper = styled.div`
+  height: 150px;
+  width: 150px;
+  margin: 0 auto; // horizontal zentriert
 `;
 
 const BalanceContainer = styled.div`
-  align-self: flex-end; // rechts im ContentContainer, nicht zentriert
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0 30px 0 0;
-
-  @media (max-width: 600px) {
-    margin: 0;
-  }
+  align-self: flex-end; // rechts in ChartSection
+  text-align: center; // content horizontal zentriert
 
   p.value {
     font-weight: bold;
+  }
+
+  p.value.negative {
+    color: var(--expense-color);
   }
 `;
 
 const ButtonContainer = styled.div`
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  width: 100%;
-  margin: 20px 0; // OK
+  justify-content: flex-end; // buttons rechts
+  gap: 1rem;
+
+  max-width: 400px; // schmaler als list
+  margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
 
   button {
     background-color: var(--button-background-color);
     color: var(--button-text-color);
     border: none;
-    border-radius: 20px;
-    cursor: pointer;
     width: 90px;
     height: 30px;
-    padding: 5px 10px; // OK
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
     &:hover {
-      transform: scale(1.07);
-      font-weight: bold;
+      transform: scale(1.04);
+      color: var(--primary-text-color);
     }
 
     &.active {
       background-color: var(--button-active-color);
       color: var(--button-active-text-color);
-      font-weight: bold;
     }
-  }
-
-  button:nth-of-type(2) {
-    margin-left: 20px; // expenses-button
   }
 `;
 
 const StyledList = styled.ul`
   list-style-type: none;
-  width: 100%;
+`;
 
-  li {
-    display: flex;
-    align-items: center; // caontent vertikal zentriert
-    justify-content: space-between;
-    height: 40px;
-    padding: 0 15px 0 15px;
-    margin: 0 0 10px 0; // OK
-    border-radius: 20px; // OK
+const ListItem = styled.li`
+  background-color: var(--list-item-background);
+  border-radius: 20px;
+  margin-bottom: 0.5rem; // Abstand zw. ListItems
 
-    background-color: ${(props) =>
-      props.$isNull ? "#5a5a5a" : "var(--list-item-background)"};
+  opacity: ${(props) =>
+    props.$empty ? 0.3 : 1}; // dunkler bei totalAmount <= 0
 
-    @media (max-width: 400px) {
-      padding: 8px 10px;
-      height: 30px;
+  &:hover {
+    transform: scale(1.02);
+
+    p {
+      color: var(--primary-text-color);
     }
   }
 `;
 
 const StyledLink = styled(Link)`
-  display: flex;
-  align-items: center;
   text-decoration: none;
-  width: 100%;
-  border-radius: 30px;
+  display: flex; // items nebeneinander
+  align-items: center; // items vertikal zentriert
+  gap: 0.5rem; // Abstand items
+
+  height: 2rem;
+  padding: 0 1rem; // Abstand Rand
 
   p {
-    color: ${(props) =>
-      props.$isNull ? "#5a5a5a" : "var(--secondary-text-color)"};
-    // font-size: 0.75rem;
-
-    @media (max-width: 400px) {
-      font-size: 0.75rem;
-    }
+    font-size: 0.8rem;
   }
 
   p.amount {
-    text-align: right;
+    margin-left: auto; // rechts
     font-weight: bold;
-    margin-left: auto;
-  }
-
-  &:hover {
-    font-weight: bold;
-
-    p.amount {
-      transform: scale(1.07);
-    }
+    white-space: nowrap;
   }
 `;
 
 const ColorTag = styled.span`
-  display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  margin-right: 10px;
 
-  background-color: ${(props) => props.color};
-  opacity: ${(props) =>
-    props.$isNull ? 0.15 : 1}; // geringere Deckkraft bei totalAmount <= 0
-
-  @media (max-width: 600px) {
-    width: 8px;
-    height: 8px;
-  }
+  background-color: ${(props) =>
+    props.$typeFilter // wenn type-filter aktiv
+      ? props.$categoryColor // dann category color
+      : props.$categoryType === "Income" // type color (main view)
+        ? "var(--income-color)"
+        : "var(--expense-color)"};
 `;

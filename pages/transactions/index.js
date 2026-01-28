@@ -632,7 +632,7 @@ const StyledLink = styled(Link)`
     }
 
     p.category {
-      opacity: 1;
+      opacity: 0.7;
     }
 
     span {
