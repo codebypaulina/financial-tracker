@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import styled from "styled-components";
 import Navbar from "@/components/Navbar";
+import ChartIcon from "@/public/icons/chart.svg";
 
 // hier muss dynamischer Import, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -13,6 +14,7 @@ const ResponsivePie = dynamic(
 
 export default function CategoriesPage() {
   const [typeFilter, setTypeFilter] = useState(null);
+  const [isChartOpen, setIsChartOpen] = useState(false);
 
   // *** [ session storage ] ***************************************************************
   // *** [ TYPE-filter ] *******************************************************************
@@ -104,6 +106,10 @@ export default function CategoriesPage() {
 
   // ***************************************************************************************
 
+  function toggleChart() {
+    setIsChartOpen((prevState) => !prevState);
+  }
+
   function toggleTypeFilter(type) {
     setTypeFilter((prevState) => (prevState === type ? null : type));
   }
@@ -113,7 +119,7 @@ export default function CategoriesPage() {
       <ContentContainer>
         <h1>Categories</h1>
 
-        {chartData.length > 0 && (
+        {isChartOpen && chartData.length > 0 && (
           <ChartSection>
             <PieWrapper>
               <ResponsivePie
@@ -147,21 +153,30 @@ export default function CategoriesPage() {
           </ChartSection>
         )}
 
-        <ButtonContainer>
-          <button
-            onClick={() => toggleTypeFilter("Income")}
-            className={typeFilter === "Income" ? "active" : ""}
+        <FilterSection>
+          <IconWrapper
+            onClick={toggleChart}
+            className={isChartOpen ? "active" : ""}
           >
-            Incomes
-          </button>
+            <ChartIcon />
+          </IconWrapper>
 
-          <button
-            onClick={() => toggleTypeFilter("Expense")}
-            className={typeFilter === "Expense" ? "active" : ""}
-          >
-            Expenses
-          </button>
-        </ButtonContainer>
+          <ButtonContainer>
+            <button
+              onClick={() => toggleTypeFilter("Income")}
+              className={typeFilter === "Income" ? "active" : ""}
+            >
+              Incomes
+            </button>
+
+            <button
+              onClick={() => toggleTypeFilter("Expense")}
+              className={typeFilter === "Expense" ? "active" : ""}
+            >
+              Expenses
+            </button>
+          </ButtonContainer>
+        </FilterSection>
 
         <StyledList>
           {filteredCategories.map((category) => (
@@ -208,8 +223,8 @@ const ContentContainer = styled.div`
 const ChartSection = styled.div`
   display: flex;
   flex-direction: column; // PieWrapper + BalanceContainer untereinander
-  max-width: 275px; // schmaler als ButtonContainer
-  margin: 0 auto 1.5rem auto; // Abstand ButtonContainer, horizontal zentriert
+  max-width: 275px; // schmaler als FilterSection
+  margin: 0 auto 1.5rem auto; // Abstand FilterSection, horizontal zentriert
 `;
 
 const PieWrapper = styled.div`
@@ -231,13 +246,45 @@ const BalanceContainer = styled.div`
   }
 `;
 
-const ButtonContainer = styled.div`
-  display: flex;
-  justify-content: flex-end; // buttons rechts
-  gap: 1rem;
+const FilterSection = styled.div`
+  display: flex; // IconWrapper + ButtonContainer nebeneinander
+  justify-content: space-between; // icon links, buttons rechts
 
   max-width: 400px; // schmaler als list
   margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
+`;
+
+const IconWrapper = styled.div`
+  background-color: var(--button-background-color);
+  color: var(--button-text-color);
+  width: 32px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex; // wegen Zentrierung von svg
+  align-items: center; // vertikal zentriert
+  justify-content: center; // horizontal zentriert
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 1);
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    transform: scale(1.07);
+    color: var(--primary-text-color);
+  }
+
+  &.active {
+    background-color: var(--button-active-color);
+    color: var(--button-active-text-color);
+  }
+`;
+
+const ButtonContainer = styled.div`
+  display: flex;
+  gap: 1rem;
 
   button {
     background-color: var(--button-background-color);
@@ -261,6 +308,8 @@ const ButtonContainer = styled.div`
     }
   }
 `;
+
+// ******************************************************************************
 
 const StyledList = styled.ul`
   list-style-type: none;

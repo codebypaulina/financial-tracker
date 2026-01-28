@@ -292,17 +292,17 @@ export default function TransactionsPage() {
         <FilterSection>
           <IconContainer>
             <IconWrapper
-              onClick={toggleDateFilterPopup}
-              className={isDateFilterActive ? "active" : ""}
-            >
-              <DateIcon className="date" />
-            </IconWrapper>
-
-            <IconWrapper
               onClick={toggleChart}
               className={isChartOpen ? "active" : ""}
             >
               <ChartIcon className="chart" />
+            </IconWrapper>
+
+            <IconWrapper
+              onClick={toggleDateFilterPopup}
+              className={isDateFilterActive ? "active" : ""}
+            >
+              <DateIcon className="date" />
             </IconWrapper>
           </IconContainer>
 
@@ -524,14 +524,14 @@ const IconWrapper = styled.div`
   cursor: pointer;
   box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
-  svg.date {
-    width: 18px;
-    height: 18px;
-  }
-
   svg.chart {
     width: 20px;
     height: 20px;
+  }
+
+  svg.date {
+    width: 18px;
+    height: 18px;
   }
 
   &:hover {
