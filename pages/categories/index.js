@@ -70,7 +70,12 @@ export default function CategoriesPage() {
   // *** [ 1. CATEGORIES ] filtern & sortieren *********************************************
   const sortedActiveCategories = [...categories]
     .filter((category) => category.type === typeFilter) // nur aktiver type
-    .sort((a, b) => b.totalAmount - a.totalAmount); // nach total amount absteigend sortiert
+    .sort((a, b) => {
+      if (b.totalAmount !== a.totalAmount) {
+        return b.totalAmount - a.totalAmount; // Betrag ungleich: total amount absteigend
+      }
+      return a.name.localeCompare(b.name, "de-DE"); // Betrag gleich: A-Z
+    });
 
   // *** [ 2. CHART ] **********************************************************************
   // *** [chart-data]
