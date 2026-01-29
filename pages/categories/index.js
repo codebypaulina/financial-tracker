@@ -123,6 +123,8 @@ export default function CategoriesPage() {
                 data={chartData}
                 colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben für Segmente
                 innerRadius={0.5} // 50 % ausgeschnitten
+                startAngle={0} // Start: oben auf 12 Uhr
+                endAngle={-360} // Ende: volle Runde gegen Uhrzeigersinn
                 padAngle={2} // Abstand zwischen Segmenten
                 cornerRadius={3} // rundere Ecken der Segmente
                 arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
