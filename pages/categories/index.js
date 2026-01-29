@@ -67,63 +67,32 @@ export default function CategoriesPage() {
   if (!categories) return <h3>Loading ...</h3>;
 
   // *** [ abgeleitete Daten ] *************************************************************
-  // *** [ 1. CATEGORIES ] sortieren & filtern *********************************************
-  // *** [sortieren]: nach total amount absteigend
-  const sortedCategories = [...categories].sort(
-    (a, b) => b.totalAmount - a.totalAmount
-  );
-
-  // *** [filtern]: type-filter auf sortedCategories
-  const filteredCategories = typeFilter
-    ? sortedCategories.filter((category) => category.type === typeFilter)
-    : sortedCategories;
+  // *** [ 1. CATEGORIES ] filtern & sortieren *********************************************
+  const sortedActiveCategories = [...categories]
+    .filter((category) => category.type === typeFilter) // nur aktiver type
+    .sort((a, b) => b.totalAmount - a.totalAmount); // nach total amount absteigend sortiert
 
   // *** [ 2. CHART ] **********************************************************************
-  // *** [totals]
-  const totalIncome = sortedCategories
-    .filter((category) => category.type === "Income")
-    .reduce((sum, category) => sum + category.totalAmount, 0);
+  // *** [chart-data]
+  const chartData = sortedActiveCategories
+    .filter((category) => category.totalAmount > 0)
+    .map((category) => ({
+      id: category._id,
+      label: category.name,
+      value: category.totalAmount,
+      color: category.color,
+    }));
 
-  const totalExpense = sortedCategories
-    .filter((category) => category.type === "Expense")
-    .reduce((sum, category) => sum + category.totalAmount, 0);
-
-  const remainingIncome = totalIncome - totalExpense;
-
-  // *** [chart-data] values aus totals
-  const chartData = typeFilter
-    ? filteredCategories
-        .filter((category) => category.totalAmount > 0)
-        .map((category) => ({
-          id: category._id,
-          label: category.name,
-          value: category.totalAmount,
-          color: category.color,
-        }))
-    : [
-        {
-          id: "Expenses",
-          label: "Expenses",
-          value: totalExpense,
-          color: "var(--expense-color)",
-        },
-        {
-          id: "Remaining Income",
-          label: "Remaining Income",
-          value: remainingIncome,
-          color: "var(--income-color)",
-        },
-      ];
-
-  // *** [tooltip %] aus chart-data
-  const chartTotalValue = chartData.reduce(
-    (sum, segment) => sum + segment.value,
+  // *** [value balance-container]: Summe angezeigter categories
+  const totalValue = sortedActiveCategories.reduce(
+    (sum, category) => sum + category.totalAmount,
     0
   );
 
+  // *** [tooltip %]
   function getChartPercentage(value) {
-    if (!chartTotalValue) return 0;
-    return Math.round((value / chartTotalValue) * 100);
+    if (!totalValue) return 0;
+    return Math.round((value / totalValue) * 100);
   }
 
   // ***************************************************************************************
@@ -132,8 +101,9 @@ export default function CategoriesPage() {
     setIsChartOpen((prevState) => !prevState);
   }
 
-  function toggleTypeFilter(type) {
-    setTypeFilter((prevState) => (prevState === type ? null : type));
+  function switchTypeFilter(type) {
+    if (type === typeFilter) return; // wenn filter bereits aktiv -> nichts
+    setTypeFilter(type); // ansonsten auf anderen type switchen
   }
 
   return (
@@ -163,9 +133,12 @@ export default function CategoriesPage() {
             </PieWrapper>
 
             <BalanceContainer>
-              <p>Total Balance</p>
-              <p className={`value ${remainingIncome < 0 ? "negative" : ""}`}>
-                {remainingIncome.toLocaleString("de-DE", {
+              <p>
+                {typeFilter === "Income" ? "Total Income" : "Total Expense"}
+              </p>
+
+              <p className="value">
+                {totalValue.toLocaleString("de-DE", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}{" "}
@@ -185,14 +158,14 @@ export default function CategoriesPage() {
 
           <ButtonContainer>
             <button
-              onClick={() => toggleTypeFilter("Income")}
+              onClick={() => switchTypeFilter("Income")}
               className={typeFilter === "Income" ? "active" : ""}
             >
               Incomes
             </button>
 
             <button
-              onClick={() => toggleTypeFilter("Expense")}
+              onClick={() => switchTypeFilter("Expense")}
               className={typeFilter === "Expense" ? "active" : ""}
             >
               Expenses
@@ -201,16 +174,12 @@ export default function CategoriesPage() {
         </FilterSection>
 
         <StyledList>
-          {filteredCategories.map((category) => (
+          {sortedActiveCategories.map((category) => (
             <ListItem key={category._id} $empty={category.totalAmount <= 0}>
               <StyledLink
                 href={`/categories/${category._id}?from=/categories`} // Eintrittspunkt CategoryDetailsPage  ;  "?from/categories": CategoriesPage als Herkunft merken, um nach delete von category wieder hierhin zurück (anstatt zur jetzt gelöschten CategoryDetailsPage)
               >
-                <ColorTag
-                  $typeFilter={typeFilter}
-                  $categoryType={category.type}
-                  $categoryColor={category.color}
-                />
+                <ColorTag $categoryColor={category.color} />
 
                 <p>{category.name}</p>
                 <p className="amount">
@@ -261,10 +230,6 @@ const BalanceContainer = styled.div`
 
   p.value {
     font-weight: bold;
-  }
-
-  p.value.negative {
-    color: var(--expense-color);
   }
 `;
 
@@ -379,10 +344,5 @@ const ColorTag = styled.span`
   height: 5px;
   border-radius: 50%;
 
-  background-color: ${(props) =>
-    props.$typeFilter // wenn type-filter aktiv
-      ? props.$categoryColor // dann category color
-      : props.$categoryType === "Income" // type color (main view)
-        ? "var(--income-color)"
-        : "var(--expense-color)"};
+  background-color: ${(props) => props.$categoryColor};
 `;
