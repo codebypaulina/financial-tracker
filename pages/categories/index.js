@@ -13,7 +13,7 @@ const ResponsivePie = dynamic(
 );
 
 export default function CategoriesPage() {
-  const [typeFilter, setTypeFilter] = useState(null);
+  const [typeFilter, setTypeFilter] = useState("Expense");
   const [isChartOpen, setIsChartOpen] = useState(false);
 
   // *** [ session storage ] ***************************************************************
@@ -42,15 +42,16 @@ export default function CategoriesPage() {
   // *** [abrufen]
   useEffect(() => {
     const storedTypeFilter = sessionStorage.getItem("categories:typeFilter");
-    if (storedTypeFilter !== "Income" && storedTypeFilter !== "Expense") return;
 
-    setTypeFilter(storedTypeFilter);
+    if (storedTypeFilter === "Income") {
+      setTypeFilter("Income"); // wenn income gespeichert -> wiederherstellen
+    }
   }, []);
 
   // *** [speichern]
   useEffect(() => {
-    if (typeFilter) {
-      sessionStorage.setItem("categories:typeFilter", typeFilter);
+    if (typeFilter === "Income") {
+      sessionStorage.setItem("categories:typeFilter", "Income"); // nur bei Wechsel zu income
     } else {
       sessionStorage.removeItem("categories:typeFilter");
     }
