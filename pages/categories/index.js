@@ -1,9 +1,10 @@
-import Navbar from "@/components/Navbar";
 import useSWR from "swr";
-import Link from "next/link";
-import styled from "styled-components";
-import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import styled from "styled-components";
+import Navbar from "@/components/Navbar";
+import ChartIcon from "@/public/icons/chart.svg";
 
 // hier muss dynamischer Import, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -12,344 +13,343 @@ const ResponsivePie = dynamic(
 );
 
 export default function CategoriesPage() {
-  const [filterState, setFilterState] = useState(null);
+  const [typeFilter, setTypeFilter] = useState("Expense");
+  const [isChartOpen, setIsChartOpen] = useState(false);
 
+  // *** [ session storage ] ***************************************************************
+  // *** [ 1. CHART-state ] ****************************************************************
+  // *** [abrufen]
   useEffect(() => {
-    const storedFilterState = sessionStorage.getItem("filterState");
-    if (storedFilterState) {
-      setFilterState(storedFilterState);
+    // holt gespeicherten key aus storage (state = true / null)
+    const storedChartState = sessionStorage.getItem("categories:isChartOpen");
+
+    // wenn key existiert -> state = true
+    if (storedChartState) setIsChartOpen(true);
+  }, []); // läuft nur 1x bei 1. render
+
+  // *** [speichern]: bei Änderung
+  useEffect(() => {
+    // (nur) wenn state = true -> key in storage speichern
+    if (isChartOpen) {
+      sessionStorage.setItem("categories:isChartOpen", "true");
+    } else {
+      // ansonsten key löschen (damit default = false)
+      sessionStorage.removeItem("categories:isChartOpen");
+    }
+  }, [isChartOpen]); // läuft nur, wenn sich state ändert (= true)
+
+  // *** [ 2. TYPE-filter ] ****************************************************************
+  // *** [abrufen]
+  useEffect(() => {
+    const storedTypeFilter = sessionStorage.getItem("categories:typeFilter");
+
+    if (storedTypeFilter === "Income") {
+      setTypeFilter("Income"); // wenn income gespeichert -> wiederherstellen
     }
   }, []);
 
+  // *** [speichern]
   useEffect(() => {
-    if (filterState) {
-      sessionStorage.setItem("filterState", filterState);
+    if (typeFilter === "Income") {
+      sessionStorage.setItem("categories:typeFilter", "Income"); // nur bei Wechsel zu income
     } else {
-      sessionStorage.removeItem("filterState"); // vermeidet Probleme durch veraltete/leere Daten
+      sessionStorage.removeItem("categories:typeFilter");
     }
-  }, [filterState]);
+  }, [typeFilter]);
 
+  // ***************************************************************************************
+
+  // *** [ fetch ]
   const { data: categories, error } = useSWR("/api/categories");
+
+  // *** [ guards ]
   if (error) return <h3>Failed to load categories</h3>;
-  if (!categories) return <h3>Loading...</h3>;
+  if (!categories) return <h3>Loading ...</h3>;
 
-  // chart
-  const totalIncome = categories
-    .filter((category) => category.type === "Income")
-    .reduce((sum, category) => sum + category.totalAmount, 0);
+  // *** [ abgeleitete Daten ] *************************************************************
+  // *** [ 1. CATEGORIES ] filtern & sortieren *********************************************
+  const sortedActiveCategories = [...categories]
+    .filter((category) => category.type === typeFilter) // nur aktiver type
+    .sort((a, b) => {
+      if (b.totalAmount !== a.totalAmount) {
+        return b.totalAmount - a.totalAmount; // Betrag ungleich: total amount absteigend
+      }
+      return a.name.localeCompare(b.name, "de-DE"); // Betrag gleich: A-Z
+    });
 
-  const totalExpense = categories
-    .filter((category) => category.type === "Expense")
-    .reduce((sum, category) => sum + category.totalAmount, 0);
+  // *** [ 2. CHART ] **********************************************************************
+  // *** [chart-data]
+  const chartData = sortedActiveCategories
+    .filter((category) => category.totalAmount > 0)
+    .map((category) => ({
+      id: category._id,
+      label: category.name,
+      value: category.totalAmount,
+      color: category.color,
+    }));
 
-  const remainingIncome = totalIncome - totalExpense;
+  // *** [value balance-container]: Summe angezeigter categories
+  const totalValue = sortedActiveCategories.reduce(
+    (sum, category) => sum + category.totalAmount,
+    0
+  );
 
-  // tooltip (%)
-  const totalFilteredValue =
-    filterState === "Expense" ? totalExpense : totalIncome;
+  // *** [tooltip %]
+  function getChartPercentage(value) {
+    if (!totalValue) return 0;
+    return Math.round((value / totalValue) * 100);
+  }
 
-  // chartData basierend auf filterState
-  const filteredChartData = filterState
-    ? categories
-        .filter(
-          (category) =>
-            category.totalAmount > 0 && category.type === filterState
-        )
-        .map((category) => ({
-          id: category.id,
-          label: category.name,
-          value: category.totalAmount,
-          color: category.color,
-        }))
-    : [
-        {
-          id: "Expenses",
-          label: "Expenses",
-          value: totalExpense,
-          color: "var(--expense-color)",
-        },
-        {
-          id: "Remaining Income",
-          label: "Remaining Income",
-          value: remainingIncome,
-          color: "var(--income-color)",
-        },
-      ];
+  // ***************************************************************************************
 
-  // categories gefiltert nach type im filterState
-  const filteredCategories = filterState
-    ? categories.filter((category) => category.type === filterState)
-    : categories;
+  function toggleChart() {
+    setIsChartOpen((prevState) => !prevState);
+  }
 
-  function toggleTypeFilter(type) {
-    setFilterState((prevFilterState) =>
-      prevFilterState === type ? null : type
-    );
+  function switchTypeFilter(type) {
+    if (type === typeFilter) return; // wenn filter bereits aktiv -> nichts
+    setTypeFilter(type); // ansonsten auf anderen type switchen
   }
 
   return (
-    <PageWrapper>
+    <>
       <ContentContainer>
         <h1>Categories</h1>
 
-        {filteredChartData.length > 0 && (
-          <ChartContainer>
-            <ResponsivePie
-              data={filteredChartData}
-              colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben für Segmente
-              innerRadius={0.5} // 50 % ausgeschnitten
-              padAngle={2} // Abstand zwischen Segmenten
-              cornerRadius={3} // rundere Ecken der Segmente
-              arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
-              animate={false} // Segmente springen nicht
-              enableArcLabels={false} // keine Zahlen im Segment
-              tooltip={({ datum }) => {
-                const percentage = (
-                  (datum.value / totalFilteredValue) *
-                  100
-                ).toFixed(0);
-                return (
+        {isChartOpen && chartData.length > 0 && (
+          <ChartSection>
+            <PieWrapper>
+              <ResponsivePie
+                data={chartData}
+                colors={{ datum: "data.color" }} // nutzt definierte Kategorienfarben für Segmente
+                innerRadius={0.5} // 50 % ausgeschnitten
+                startAngle={0} // Start: oben auf 12 Uhr
+                endAngle={-360} // Ende: volle Runde gegen Uhrzeigersinn
+                padAngle={2} // Abstand zwischen Segmenten
+                cornerRadius={3} // rundere Ecken der Segmente
+                arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
+                animate={false} // Segmente springen nicht
+                enableArcLabels={false} // keine Zahlen im Segment
+                tooltip={({ datum }) => (
                   <div>
-                    {datum.label}: <strong>{percentage} %</strong>
+                    {datum.label}:{" "}
+                    <strong>{getChartPercentage(datum.value)} %</strong>
                   </div>
-                );
-              }}
-            />
-          </ChartContainer>
+                )}
+              />
+            </PieWrapper>
+
+            <BalanceContainer>
+              <p>
+                {typeFilter === "Income" ? "Total Income" : "Total Expense"}
+              </p>
+
+              <p className="value">
+                {totalValue.toLocaleString("de-DE", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                €
+              </p>
+            </BalanceContainer>
+          </ChartSection>
         )}
 
-        <BalanceContainer>
-          <p>Total Balance</p>
-          <p className="value">
-            {remainingIncome.toLocaleString("de-DE", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{" "}
-            €
-          </p>
-        </BalanceContainer>
+        <FilterSection>
+          <IconWrapper
+            onClick={toggleChart}
+            className={isChartOpen ? "active" : ""}
+          >
+            <ChartIcon />
+          </IconWrapper>
 
-        <ButtonContainer>
-          <button
-            onClick={() => toggleTypeFilter("Income")}
-            className={filterState === "Income" ? "active" : ""}
-          >
-            Incomes
-          </button>
-          <button
-            onClick={() => toggleTypeFilter("Expense")}
-            className={filterState === "Expense" ? "active" : ""}
-          >
-            Expenses
-          </button>
-        </ButtonContainer>
+          <ButtonContainer>
+            <button
+              onClick={() => switchTypeFilter("Income")}
+              className={typeFilter === "Income" ? "active" : ""}
+            >
+              Incomes
+            </button>
+
+            <button
+              onClick={() => switchTypeFilter("Expense")}
+              className={typeFilter === "Expense" ? "active" : ""}
+            >
+              Expenses
+            </button>
+          </ButtonContainer>
+        </FilterSection>
 
         <StyledList>
-          {filteredCategories
-            .sort((a, b) => b.totalAmount - a.totalAmount) // nach totalAmount absteigend sortiert
-            .map((category) => (
-              <li
-                key={category._id}
-                $isNull={category.totalAmount <= 0}
-                style={{
-                  backgroundColor:
-                    category.totalAmount <= 0
-                      ? "#242424"
-                      : "var(--list-item-background)",
-                }}
+          {sortedActiveCategories.map((category) => (
+            <ListItem key={category._id} $empty={category.totalAmount <= 0}>
+              <StyledLink
+                href={`/categories/${category._id}?from=/categories`} // Eintrittspunkt CategoryDetailsPage  ;  "?from/categories": CategoriesPage als Herkunft merken, um nach delete von category wieder hierhin zurück (anstatt zur jetzt gelöschten CategoryDetailsPage)
               >
-                <ColorTag
-                  color={
-                    filterState
-                      ? category.color
-                      : category.type === "Income"
-                      ? "var(--income-color)"
-                      : "var(--expense-color)"
-                  }
-                  $isNull={category.totalAmount <= 0}
-                />
+                <ColorTag $categoryColor={category.color} />
 
-                <StyledLink
-                  href={`/categories/${category._id}?from=/categories`} // Eintrittspunkt CategoryDetailsPage  ;  "?from/categories": CategoriesPage als Herkunft merken, um nach delete von category wieder hierhin zurück (anstatt zur jetzt gelöschten CategoryDetailsPage)
-                  $isNull={category.totalAmount <= 0}
-                >
-                  <p>{category.name}</p>
-                  <p className="amount">
-                    {category.totalAmount.toLocaleString("de-DE", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
-                    €
-                  </p>
-                </StyledLink>
-              </li>
-            ))}
+                <p>{category.name}</p>
+                <p className="amount">
+                  {category.totalAmount.toLocaleString("de-DE", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </p>
+              </StyledLink>
+            </ListItem>
+          ))}
         </StyledList>
-
-        <Navbar />
       </ContentContainer>
-    </PageWrapper>
+
+      <Navbar />
+    </>
   );
 }
 
-const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column; // vertikal angeordnet
-  align-items: center; // ContentContainer vertikal zentriert
-  width: 100%;
-  height: 100vh; // gesamte Höhe von Viewport
-`;
-
 const ContentContainer = styled.div`
-  width: 100%;
-  max-width: 800px; // wegen list & buttons
+  padding: 20px 20px 83px 20px; // Nav 75px // Abstand Bildschirmrand
+  max-width: 500px; // Breite von list
   margin: 0 auto; // content horizontal zentriert
-  display: flex;
-  flex-direction: column; // content untereinander
-  align-items: center; // content zentriert
-  padding: 20px 70px 75px 70px; // 75px: Nav
 
   h1 {
-    margin-bottom: 20px;
-  }
-
-  @media (max-width: 600px) {
-    padding: 20px 60px 75px 20px;
-  }
-
-  @media (max-width: 400px) {
-    padding: 20px 40px 75px 40px;
+    text-align: center;
+    margin-bottom: 1.5rem;
   }
 `;
 
-const ChartContainer = styled.div`
-  height: 200px;
-  width: 200px;
+const ChartSection = styled.div`
+  display: flex;
+  flex-direction: column; // PieWrapper + BalanceContainer untereinander
+  max-width: 275px; // schmaler als FilterSection
+  margin: 0 auto 1.5rem auto; // Abstand FilterSection, horizontal zentriert
+`;
 
-  @media (max-width: 600px) {
-    height: 150px;
-    width: 150px;
-  }
+const PieWrapper = styled.div`
+  height: 150px;
+  width: 150px;
+  margin: 0 auto; // horizontal zentriert
 `;
 
 const BalanceContainer = styled.div`
-  align-self: flex-end; // rechts im ContentContainer, nicht zentriert
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0 30px 0 0;
-
-  @media (max-width: 600px) {
-    margin: 0;
-  }
+  align-self: flex-end; // rechts in ChartSection
+  text-align: center; // content horizontal zentriert
 
   p.value {
     font-weight: bold;
   }
 `;
 
+const FilterSection = styled.div`
+  display: flex; // IconWrapper + ButtonContainer nebeneinander
+  justify-content: space-between; // icon links, buttons rechts
+
+  max-width: 400px; // schmaler als list
+  margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
+`;
+
+const IconWrapper = styled.div`
+  background-color: var(--button-background-color);
+  color: var(--button-text-color);
+  width: 32px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex; // wegen Zentrierung von svg
+  align-items: center; // vertikal zentriert
+  justify-content: center; // horizontal zentriert
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 1);
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    transform: scale(1.07);
+    color: var(--primary-text-color);
+  }
+
+  &.active {
+    background-color: var(--button-active-color);
+    color: var(--button-active-text-color);
+  }
+`;
+
 const ButtonContainer = styled.div`
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  width: 100%;
-  margin: 20px 0; // OK
+  gap: 1rem;
 
   button {
     background-color: var(--button-background-color);
     color: var(--button-text-color);
     border: none;
-    border-radius: 20px;
-    cursor: pointer;
     width: 90px;
     height: 30px;
-    padding: 5px 10px; // OK
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
     &:hover {
-      transform: scale(1.07);
-      font-weight: bold;
+      transform: scale(1.04);
+      color: var(--primary-text-color);
     }
 
     &.active {
       background-color: var(--button-active-color);
       color: var(--button-active-text-color);
-      font-weight: bold;
     }
-  }
-
-  button:nth-of-type(2) {
-    margin-left: 20px; // expenses-button
   }
 `;
 
+// ******************************************************************************
+
 const StyledList = styled.ul`
   list-style-type: none;
-  width: 100%;
+`;
 
-  li {
-    display: flex;
-    align-items: center; // caontent vertikal zentriert
-    justify-content: space-between;
-    height: 40px;
-    padding: 0 15px 0 15px;
-    margin: 0 0 10px 0; // OK
-    border-radius: 20px; // OK
+const ListItem = styled.li`
+  background-color: var(--list-item-background);
+  border-radius: 20px;
+  margin-bottom: 0.5rem; // Abstand zw. ListItems
 
-    background-color: ${(props) =>
-      props.$isNull ? "#5a5a5a" : "var(--list-item-background)"};
+  opacity: ${(props) =>
+    props.$empty ? 0.3 : 1}; // dunkler bei totalAmount <= 0
 
-    @media (max-width: 400px) {
-      padding: 8px 10px;
-      height: 30px;
+  &:hover {
+    transform: scale(1.02);
+
+    p {
+      color: var(--primary-text-color);
     }
   }
 `;
 
 const StyledLink = styled(Link)`
-  display: flex;
-  align-items: center;
   text-decoration: none;
-  width: 100%;
-  border-radius: 30px;
+  display: flex; // items nebeneinander
+  align-items: center; // items vertikal zentriert
+  gap: 0.5rem; // Abstand items
+
+  height: 2rem;
+  padding: 0 1rem; // Abstand Rand
 
   p {
-    color: ${(props) =>
-      props.$isNull ? "#5a5a5a" : "var(--secondary-text-color)"};
-    // font-size: 0.75rem;
-
-    @media (max-width: 400px) {
-      font-size: 0.75rem;
-    }
+    font-size: 0.8rem;
   }
 
   p.amount {
-    text-align: right;
+    margin-left: auto; // rechts
     font-weight: bold;
-    margin-left: auto;
-  }
-
-  &:hover {
-    font-weight: bold;
-
-    p.amount {
-      transform: scale(1.07);
-    }
+    white-space: nowrap;
   }
 `;
 
 const ColorTag = styled.span`
-  display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  margin-right: 10px;
 
-  background-color: ${(props) => props.color};
-  opacity: ${(props) =>
-    props.$isNull ? 0.15 : 1}; // geringere Deckkraft bei totalAmount <= 0
-
-  @media (max-width: 600px) {
-    width: 8px;
-    height: 8px;
-  }
+  background-color: ${(props) => props.$categoryColor};
 `;

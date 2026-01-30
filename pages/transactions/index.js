@@ -49,7 +49,7 @@ export default function TransactionsPage() {
   // *** [abrufen]
   useEffect(() => {
     // holt gespeicherten key aus storage (state = true / null)
-    const storedChartState = sessionStorage.getItem("isChartOpen");
+    const storedChartState = sessionStorage.getItem("transactions:isChartOpen");
 
     // wenn key existiert -> state = true
     if (storedChartState) setIsChartOpen(true);
@@ -59,17 +59,17 @@ export default function TransactionsPage() {
   useEffect(() => {
     // (nur) wenn state = true -> key in storage speichern
     if (isChartOpen) {
-      sessionStorage.setItem("isChartOpen", "true");
+      sessionStorage.setItem("transactions:isChartOpen", "true");
     } else {
       // ansonsten key löschen (damit default = false)
-      sessionStorage.removeItem("isChartOpen");
+      sessionStorage.removeItem("transactions:isChartOpen");
     }
   }, [isChartOpen]); // läuft nur, wenn sich state ändert (= true)
 
   // *** [ 3. TYPE-filter ] ****************************************************************
   // *** [abrufen]
   useEffect(() => {
-    const storedTypeFilter = sessionStorage.getItem("typeFilter");
+    const storedTypeFilter = sessionStorage.getItem("transactions:typeFilter");
     if (storedTypeFilter !== "Income" && storedTypeFilter !== "Expense") return;
 
     setTypeFilter(storedTypeFilter);
@@ -78,9 +78,9 @@ export default function TransactionsPage() {
   // *** [speichern]
   useEffect(() => {
     if (typeFilter) {
-      sessionStorage.setItem("typeFilter", typeFilter);
+      sessionStorage.setItem("transactions:typeFilter", typeFilter);
     } else {
-      sessionStorage.removeItem("typeFilter");
+      sessionStorage.removeItem("transactions:typeFilter");
     }
   }, [typeFilter]);
 
@@ -292,17 +292,17 @@ export default function TransactionsPage() {
         <FilterSection>
           <IconContainer>
             <IconWrapper
-              onClick={toggleDateFilterPopup}
-              className={isDateFilterActive ? "active" : ""}
-            >
-              <DateIcon className="date" />
-            </IconWrapper>
-
-            <IconWrapper
               onClick={toggleChart}
               className={isChartOpen ? "active" : ""}
             >
               <ChartIcon className="chart" />
+            </IconWrapper>
+
+            <IconWrapper
+              onClick={toggleDateFilterPopup}
+              className={isDateFilterActive ? "active" : ""}
+            >
+              <DateIcon className="date" />
             </IconWrapper>
           </IconContainer>
 
@@ -524,14 +524,14 @@ const IconWrapper = styled.div`
   cursor: pointer;
   box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
-  svg.date {
-    width: 18px;
-    height: 18px;
-  }
-
   svg.chart {
     width: 20px;
     height: 20px;
+  }
+
+  svg.date {
+    width: 18px;
+    height: 18px;
   }
 
   &:hover {
@@ -632,7 +632,7 @@ const StyledLink = styled(Link)`
     }
 
     p.category {
-      opacity: 1;
+      opacity: 0.7;
     }
 
     span {
