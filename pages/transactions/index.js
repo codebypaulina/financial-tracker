@@ -353,7 +353,7 @@ export default function TransactionsPage() {
 
         <StyledList>
           {filteredTransactions.map((transaction) => (
-            <Row key={transaction._id}>
+            <ListItem key={transaction._id}>
               <StyledLink href={`/transactions/${transaction._id}`}>
                 <p className="date">
                   {new Date(transaction.date).toLocaleDateString("de-DE", {
@@ -385,7 +385,7 @@ export default function TransactionsPage() {
                   €
                 </p>
               </StyledLink>
-            </Row>
+            </ListItem>
           ))}
         </StyledList>
       </ContentContainer>
@@ -464,7 +464,7 @@ const DateFilterPopup = styled.div`
 
 const ContentContainer = styled.div`
   padding: 20px 20px 83px 20px; // Nav 75px // Abstand Bildschirmrand
-  max-width: 500px; // Breite von list
+  max-width: 430px; // Breite von list
   margin: 0 auto; // content horizontal zentriert
 
   h1 {
@@ -476,7 +476,7 @@ const ContentContainer = styled.div`
 const ChartSection = styled.div`
   display: flex;
   flex-direction: column; // PieWrapper + BalanceContainer untereinander
-  max-width: 275px; // schmaler als FilterSection
+  max-width: 265px; // schmaler als FilterSection
   margin: 0 auto 1.5rem auto; // Abstand FilterSection, horizontal zentriert
 `;
 
@@ -503,7 +503,7 @@ const FilterSection = styled.div`
   display: flex; // IconContainer + ButtonContainer nebeneinander
   justify-content: space-between; // icon links, button rechts
 
-  max-width: 400px; // schmaler als list
+  max-width: 300px; // schmaler als list
   margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
 `;
 
@@ -584,7 +584,7 @@ const StyledList = styled.ul`
   gap: 0.5rem;
 `;
 
-const Row = styled.li`
+const ListItem = styled.li`
   display: contents; // childs direkte grid-items von StyledList
 `;
 

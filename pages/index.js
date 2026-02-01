@@ -107,21 +107,22 @@ export default function HomePage() {
   }
 
   return (
-    <PageWrapper>
+    <>
       <ContentContainer>
         {/* <LoginSection /> */}
         <h1>Expenses</h1>
 
         {chartData.length > 0 && (
-          <ChartContainer>
+          <PieWrapper>
             <ResponsivePie
               data={chartData}
               colors={{ datum: "data.color" }}
               innerRadius={0.5} // 50 % ausgeschnitten
+              startAngle={0} // Start: oben auf 12 Uhr
+              endAngle={-360} // Ende: volle Runde gegen Uhrzeigersinn
               padAngle={2} // Abstand zw. Segmenten
               cornerRadius={3} // rundere Ecken von Segmenten
               arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
-              // isInteractive={false} // alle Interaktionen weg
               animate={false} // Segmente springen nicht
               enableArcLabels={false} // keine Zahlen im Segment
               tooltip={({ datum }) => (
@@ -131,7 +132,7 @@ export default function HomePage() {
                 </div>
               )}
             />
-          </ChartContainer>
+          </PieWrapper>
         )}
 
         <BalanceContainer>
@@ -147,7 +148,7 @@ export default function HomePage() {
 
         <StyledList>
           {sortedCategories.map((category) => (
-            <StyledListItem
+            <ListItem
               key={category._id}
               $isHidden={hiddenCategories.includes(category._id)}
             >
@@ -159,6 +160,7 @@ export default function HomePage() {
                   $categoryColor={category.color}
                   $isHidden={hiddenCategories.includes(category._id)}
                 />
+
                 <p>{category.name}</p>
                 <p className="amount">
                   {category.totalAmount.toLocaleString("de-DE", {
@@ -178,62 +180,36 @@ export default function HomePage() {
                   <EyeIcon />
                 </IconWrapper>
               )}
-            </StyledListItem>
+            </ListItem>
           ))}
         </StyledList>
-
-        <Navbar />
       </ContentContainer>
-    </PageWrapper>
+
+      <Navbar />
+    </>
   );
 }
 
-const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column; // vertikal angeordnet
-  align-items: center; // ContentContainer vertikal zentriert
-  width: 100%;
-  height: 100vh; // gesamte Höhe von Viewport
-`;
-
 const ContentContainer = styled.div`
-  width: 100%;
-  max-width: 800px; // wegen list & buttons
-  margin: 0 auto; // content horizontal zentriert
+  padding: 20px 20px 83px 20px; // Nav 75px // Abstand Bildschirmrand
   display: flex;
   flex-direction: column; // content untereinander
-  align-items: center; // content zentriert
-  // padding: 20px 20px 75px 20px; // 75px: Nav
-  padding: 20px 70px 75px 70px; // 75px: Nav
+  align-items: center; // content horizontal zentriert
 
   h1 {
-    margin-bottom: 20px;
-  }
-
-  @media (max-width: 600px) {
-    padding: 20px 60px 75px 20px;
-  }
-
-  @media (max-width: 400px) {
-    padding: 20px 40px 75px 40px;
+    margin-bottom: 1.5rem;
   }
 `;
 
-const ChartContainer = styled.div`
-  height: 200px;
-  width: 200px;
-
-  @media (max-width: 600px) {
-    height: 150px;
-    width: 150px;
-  }
+const PieWrapper = styled.div`
+  height: 150px;
+  width: 150px;
 `;
+
 const BalanceContainer = styled.div`
-  align-self: flex-end; // rechts im ContentContainer, nicht zentriert
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0 0 20px 0;
+  align-self: flex-end; // rechts im ContentContainer
+  text-align: center; // content horizontal zentriert
+  margin-bottom: 1.5rem; // Abstand list
 
   p.value {
     font-weight: bold;
@@ -241,59 +217,54 @@ const BalanceContainer = styled.div`
 `;
 
 const StyledList = styled.ul`
-  // list-style-type: none;
-  width: 100%;
+  list-style-type: none;
 `;
 
-const StyledListItem = styled.li`
-  display: grid;
-  grid-template-columns: 1fr auto; // StyledLink | EyeIcon
-  gap: 10px;
-  align-items: center; // wg. ColorTag & EyeIcon
-  color: ${(props) => (props.$isHidden ? "#5a5a5a" : "inherit")};
-  
-  @media (max-width: 600px) {
-    p {
-      font-size: 0.95rem;
-    }
+const ListItem = styled.li`
+  display: flex; // link + icon nebeneinander
+  justify-content: center; // horizontal zentriert
+  margin-bottom: 0.75rem; // Abstand zw. ListItems
+  gap: 1rem; // Abstand link + icon
+
+  opacity: ${(props) => (props.$isHidden ? 0.2 : 1)};
 `;
 
 const StyledLink = styled(Link)`
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
   text-decoration: none;
-  padding: 0 15px 0 15px;
-  height: 40px;
-  width: 100%;
-  margin: 7px 0 7px 0;
-  border-radius: 30px;
+  display: flex; // items nebeneinander
+  align-items: center; // items vertikal zentriert
+  gap: 0.5rem; // Abstand items
+
   background-color: var(--list-item-background);
-  opacity: ${(props) => (props.$isHidden ? 0.5 : 1)}; //
+  height: 2rem;
+  width: 100%; // alle so breit wie der breiteste link
+  border-radius: 20px;
+  padding: 0 1rem; // Abstand Rand
 
   p {
-    color: ${(props) =>
-      props.$isHidden ? "#5a5a5a" : "var(--secondary-text-color)"};
+    font-size: 1rem;
   }
 
   p.amount {
-    text-align: right;
+    margin-left: auto; // rechts
     font-weight: bold;
+    white-space: nowrap;
   }
 
   &:hover {
-    font-weight: bold;
+    transform: scale(1.02);
 
-    p.amount {
-      transform: scale(1.07);
+    p {
+      color: var(--primary-text-color);
     }
   }
 `;
 
 const IconWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; // wegen Zentrierung von svg
+  align-items: center; // vertikal zentriert
+  justify-content: center; // horizontal zentriert
+  cursor: pointer;
 
   svg {
     width: 20px;
@@ -306,16 +277,10 @@ const IconWrapper = styled.div`
 `;
 
 const ColorTag = styled.span`
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  margin-right: 10px;
 
   background-color: ${(props) =>
     props.$isHidden ? "#5a5a5a" : props.$categoryColor};
-
-  @media (max-width: 600px) {
-    width: 10px;
-    height: 10px;
-  }
 `;
