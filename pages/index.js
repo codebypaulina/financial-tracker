@@ -1,12 +1,11 @@
-// import LoginSection from "@/components/LoginSection";
-import Navbar from "@/components/Navbar";
 import useSWR from "swr";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import styled from "styled-components";
+import Navbar from "@/components/Navbar";
 import EyeIcon from "@/public/icons/eye.svg";
 import EyeSlashIcon from "@/public/icons/eye-slash.svg";
-import Link from "next/link";
-import styled from "styled-components";
-import dynamic from "next/dynamic";
-import { useState, useEffect } from "react";
 
 // hier muss dynamischer Import, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -15,73 +14,96 @@ const ResponsivePie = dynamic(
 );
 
 export default function HomePage() {
-  // Initialwert von Zustand von hiddenCategories = aus localStorage
-  // -> NUR, wenn Code im Browser ausgeführt wird, sonst Server Error (localStorage serverseitig nicht verfügbar)
-  const [hiddenCategories, setHiddenCategories] = useState(() => {
-    if (typeof window !== "undefined") {
-      const storedHiddenCategories = localStorage.getItem("hiddenCategories");
-      return storedHiddenCategories ? JSON.parse(storedHiddenCategories) : [];
-    }
-    return [];
-  });
+  const [hiddenCategories, setHiddenCategories] = useState([]);
 
-  // Zustand von hiddenCategories bei Änderung im localStorage speichern
+  // *** [ LOCAL STORAGE ] hidden categories ***********************************************
+  // *** [abrufen]
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    const storedHiddenCategories = localStorage.getItem("hiddenCategories");
+    if (!storedHiddenCategories) return;
+
+    try {
+      const parsedHiddenCategories = JSON.parse(storedHiddenCategories);
+      if (Array.isArray(parsedHiddenCategories)) {
+        setHiddenCategories(parsedHiddenCategories);
+      } // state setzen, nur wenn array okay
+    } catch {
+      // ignorieren -> default []
+    }
+  }, []);
+
+  // *** [speichern]: nur wenn array nicht leer
+  useEffect(() => {
+    if (hiddenCategories.length !== 0) {
       localStorage.setItem(
         "hiddenCategories",
         JSON.stringify(hiddenCategories)
       );
+    } else {
+      localStorage.removeItem("hiddenCategories");
     }
   }, [hiddenCategories]);
 
-  const { data: categories, error } = useSWR("/api/categories");
-  if (error) return <h3>Failed to load categories</h3>;
-  if (!categories) return <h3>Loading...</h3>;
+  // ***************************************************************************************
 
+  // *** [ fetch ]
+  const { data: categories, error } = useSWR("/api/categories");
+
+  // *** [ guards ]
+  if (error) return <h3>Failed to load categories</h3>;
+  if (!categories) return <h3>Loading ...</h3>;
+
+  // *** [ ABGELEITETE DATEN ] *************************************************************
+  // *** [ 1. categories ] filtern + sortieren *********************************************
+  // *** [filtern]: alle expense + nicht leer
   const expenseCategories = categories.filter(
     (category) => category.type === "Expense" && category.totalAmount > 0
   );
 
-  // erst nach visibility & dann nach totalAmount (absteigend) sortieren
-  expenseCategories.sort((a, b) => {
+  // *** [sortieren]: visibility
+  const sortedCategories = [...expenseCategories].sort((a, b) => {
     const isHiddenA = hiddenCategories.includes(a._id);
     const isHiddenB = hiddenCategories.includes(b._id);
 
-    // wenn beide gleiche visibility haben, nach totalAmount
-    if (isHiddenA === isHiddenB) return b.totalAmount - a.totalAmount;
-
-    // hiddenCategories nach unten
-    return isHiddenA - isHiddenB;
+    if (isHiddenA === isHiddenB) return b.totalAmount - a.totalAmount; // visibility gleich: total amount absteigend
+    return isHiddenA - isHiddenB; // visibility ungleich: hidden nach unten
   });
 
-  // chart
-  const chartData = expenseCategories
-    .filter(
-      (category) =>
-        category.totalAmount > 0 && !hiddenCategories.includes(category._id)
-    )
-    .map((category) => ({
-      id: category.id,
-      label: category.name,
-      value: category.totalAmount,
-      color: category.color,
-    }));
+  // *** [filtern]: nur visible expense (für chart + total expense)
+  const visibleCategories = sortedCategories.filter(
+    (category) => !hiddenCategories.includes(category._id)
+  );
 
-  // Summe aller aktiven Kategorien
-  const totalVisibleAmount = expenseCategories
-    .filter((category) => !hiddenCategories.includes(category._id))
-    .reduce((sum, category) => sum + category.totalAmount, 0);
+  // *** [ 2. chart ] **********************************************************************
+  // *** [chart-data]
+  const chartData = visibleCategories.map((category) => ({
+    id: category._id,
+    label: category.name,
+    value: category.totalAmount,
+    color: category.color,
+  }));
 
-  // EyeIcon
+  // *** [total-container]: Summe angezeigter categories
+  const totalExpense = visibleCategories.reduce(
+    (sum, category) => sum + category.totalAmount,
+    0
+  );
+
+  // *** [tooltip %]
+  function getChartPercentage(value) {
+    if (!totalExpense) return 0;
+    return Math.round((value / totalExpense) * 100);
+  }
+
+  // ***************************************************************************************
+
   function toggleVisibility(categoryId) {
-    setHiddenCategories((prevHiddenCategories) => {
-      const updatedCategories = prevHiddenCategories.includes(categoryId)
-        ? prevHiddenCategories.filter((id) => id !== categoryId) // wenn ID schon in hiddenCategories enthalten, dann entfernen (= neues Array ohne diese ID)
-        : [...prevHiddenCategories, categoryId]; // wenn ID noch nicht in hiddenCategories enthalten, dann hinzufügen (= neues Array mit bestehender Liste + dieser ID)
-
-      return updatedCategories;
-    });
+    setHiddenCategories(
+      (prevState) =>
+        prevState.includes(categoryId)
+          ? prevState.filter((id) => id !== categoryId) // in state -> neues array: ohne diese
+          : [...prevState, categoryId] // nicht in state -> neues array: bestehende list + diese
+    );
   }
 
   return (
@@ -102,25 +124,20 @@ export default function HomePage() {
               // isInteractive={false} // alle Interaktionen weg
               animate={false} // Segmente springen nicht
               enableArcLabels={false} // keine Zahlen im Segment
-              tooltip={({ datum }) => {
-                const percentage = (
-                  (datum.value / totalVisibleAmount) *
-                  100
-                ).toFixed(0);
-                return (
-                  <div>
-                    {datum.label}: <strong>{percentage} %</strong>
-                  </div>
-                );
-              }} // zeigt Name & Summe (%) von Kategorie beim Hovern über Segment (auf Touch-Geräten beim Klicken)
+              tooltip={({ datum }) => (
+                <div>
+                  {datum.label}:{" "}
+                  <strong>{getChartPercentage(datum.value)} %</strong>
+                </div>
+              )}
             />
           </ChartContainer>
         )}
 
         <BalanceContainer>
-          <p>Total Expenses</p>
+          <p>Total Expense</p>
           <p className="value">
-            {totalVisibleAmount.toLocaleString("de-DE", {
+            {totalExpense.toLocaleString("de-DE", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}{" "}
@@ -129,7 +146,7 @@ export default function HomePage() {
         </BalanceContainer>
 
         <StyledList>
-          {expenseCategories.map((category) => (
+          {sortedCategories.map((category) => (
             <StyledListItem
               key={category._id}
               $isHidden={hiddenCategories.includes(category._id)}
