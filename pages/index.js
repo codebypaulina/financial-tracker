@@ -46,6 +46,22 @@ export default function HomePage() {
     }
   }, [hiddenCategories]);
 
+  // *** [ SESSION STORAGE ] chart-state ***************************************************
+  // *** [abrufen]
+  useEffect(() => {
+    const storedChartState = sessionStorage.getItem("home:isChartOpen");
+    if (storedChartState) setIsChartOpen(true);
+  }, []);
+
+  // *** [speichern]: wenn open
+  useEffect(() => {
+    if (isChartOpen) {
+      sessionStorage.setItem("home:isChartOpen", "true");
+    } else {
+      sessionStorage.removeItem("home:isChartOpen");
+    }
+  }, [isChartOpen]);
+
   // ***************************************************************************************
 
   // *** [ fetch ]
@@ -227,7 +243,7 @@ const DisplaySection = styled.div`
 
   p {
     font-weight: bold;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     margin-right: 2.5rem;
   }
 `;

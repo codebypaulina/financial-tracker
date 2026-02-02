@@ -503,13 +503,13 @@ const FilterSection = styled.div`
   display: flex; // IconContainer + ButtonContainer nebeneinander
   justify-content: space-between; // icon links, button rechts
 
-  max-width: 300px; // schmaler als list
+  max-width: 285px; // schmaler als list
   margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
 `;
 
 const IconContainer = styled.div`
   display: flex; // svgs nebeneinander
-  gap: 1rem; // für gap
+  gap: 0.75rem; // für gap
 `;
 
 const IconWrapper = styled.div`
@@ -547,7 +547,7 @@ const IconWrapper = styled.div`
 
 const ButtonContainer = styled.div`
   display: flex; // für gap
-  gap: 1rem;
+  gap: 0.75rem;
 
   button {
     background-color: var(--button-background-color);

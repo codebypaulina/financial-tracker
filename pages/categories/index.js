@@ -244,7 +244,7 @@ const FilterSection = styled.div`
   display: flex; // IconWrapper + ButtonContainer nebeneinander
   justify-content: space-between; // icon links, buttons rechts
 
-  max-width: 300px; // bisschen schmaler als list
+  max-width: 285px; // schmaler als list
   margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
 `;
 
@@ -278,7 +278,7 @@ const IconWrapper = styled.div`
 
 const ButtonContainer = styled.div`
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
 
   button {
     background-color: var(--button-background-color);
