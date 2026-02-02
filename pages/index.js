@@ -6,6 +6,7 @@ import styled from "styled-components";
 import Navbar from "@/components/Navbar";
 import EyeIcon from "@/public/icons/eye.svg";
 import EyeSlashIcon from "@/public/icons/eye-slash.svg";
+import ChartIcon from "@/public/icons/chart.svg";
 
 // hier muss dynamischer Import, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -15,6 +16,7 @@ const ResponsivePie = dynamic(
 
 export default function HomePage() {
   const [hiddenCategories, setHiddenCategories] = useState([]);
+  const [isChartOpen, setIsChartOpen] = useState(false);
 
   // *** [ LOCAL STORAGE ] hidden categories ***********************************************
   // *** [abrufen]
@@ -83,7 +85,7 @@ export default function HomePage() {
     color: category.color,
   }));
 
-  // *** [total-container]: Summe angezeigter categories
+  // *** [display-section]: Summe angezeigter categories
   const totalExpense = visibleCategories.reduce(
     (sum, category) => sum + category.totalAmount,
     0
@@ -96,6 +98,10 @@ export default function HomePage() {
   }
 
   // ***************************************************************************************
+
+  function toggleChart() {
+    setIsChartOpen((prevState) => !prevState);
+  }
 
   function toggleVisibility(categoryId) {
     setHiddenCategories(
@@ -112,7 +118,7 @@ export default function HomePage() {
         {/* <LoginSection /> */}
         <h1>Expenses</h1>
 
-        {chartData.length > 0 && (
+        {isChartOpen && chartData.length > 0 && (
           <PieWrapper>
             <ResponsivePie
               data={chartData}
@@ -135,16 +141,22 @@ export default function HomePage() {
           </PieWrapper>
         )}
 
-        <BalanceContainer>
-          <p>Total Expense</p>
-          <p className="value">
+        <DisplaySection>
+          <IconWrapperChart
+            onClick={toggleChart}
+            className={isChartOpen ? "active" : ""}
+          >
+            <ChartIcon />
+          </IconWrapperChart>
+
+          <p>
             {totalExpense.toLocaleString("de-DE", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}{" "}
             €
           </p>
-        </BalanceContainer>
+        </DisplaySection>
 
         <StyledList>
           {sortedCategories.map((category) => (
@@ -172,13 +184,13 @@ export default function HomePage() {
               </StyledLink>
 
               {hiddenCategories.includes(category._id) ? (
-                <IconWrapper onClick={() => toggleVisibility(category._id)}>
+                <IconWrapperEye onClick={() => toggleVisibility(category._id)}>
                   <EyeSlashIcon />
-                </IconWrapper>
+                </IconWrapperEye>
               ) : (
-                <IconWrapper onClick={() => toggleVisibility(category._id)}>
+                <IconWrapperEye onClick={() => toggleVisibility(category._id)}>
                   <EyeIcon />
-                </IconWrapper>
+                </IconWrapperEye>
               )}
             </ListItem>
           ))}
@@ -192,11 +204,11 @@ export default function HomePage() {
 
 const ContentContainer = styled.div`
   padding: 20px 20px 83px 20px; // Nav 75px // Abstand Bildschirmrand
-  display: flex;
-  flex-direction: column; // content untereinander
-  align-items: center; // content horizontal zentriert
+  max-width: 350px; // Breite von list
+  margin: 0 auto; // content horizontal zentriert
 
   h1 {
+    text-align: center;
     margin-bottom: 1.5rem;
   }
 `;
@@ -204,15 +216,47 @@ const ContentContainer = styled.div`
 const PieWrapper = styled.div`
   height: 150px;
   width: 150px;
+  margin: 0 auto 1rem auto; // horizontal zentriert, Abstand DisplaySection
 `;
 
-const BalanceContainer = styled.div`
-  align-self: flex-end; // rechts im ContentContainer
-  text-align: center; // content horizontal zentriert
-  margin-bottom: 1.5rem; // Abstand list
+const DisplaySection = styled.div`
+  display: flex; // icon + totalExpense nebeneinander
+  justify-content: space-between; // icon links, totalExpense rechts
+  max-width: 285px; // schmaler als list
+  margin: 0 auto 1.5rem auto; // horizontal zentriert, Abstand list
 
-  p.value {
+  p {
     font-weight: bold;
+    font-size: 1.5rem;
+    margin-right: 2.5rem;
+  }
+`;
+
+const IconWrapperChart = styled.div`
+  background-color: var(--button-background-color);
+  color: var(--button-text-color);
+  width: 32px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex; // wegen Zentrierung von svg
+  align-items: center; // vertikal zentriert
+  justify-content: center; // horizontal zentriert
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 1);
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    transform: scale(1.07);
+    color: var(--primary-text-color);
+  }
+
+  &.active {
+    background-color: var(--button-active-color);
+    color: var(--button-active-text-color);
   }
 `;
 
@@ -237,7 +281,7 @@ const StyledLink = styled(Link)`
 
   background-color: var(--list-item-background);
   height: 2rem;
-  width: 100%; // alle so breit wie der breiteste link
+  width: 100%; // link füllt Platz in list-Breite
   border-radius: 20px;
   padding: 0 1rem; // Abstand Rand
 
@@ -260,7 +304,7 @@ const StyledLink = styled(Link)`
   }
 `;
 
-const IconWrapper = styled.div`
+const IconWrapperEye = styled.div`
   display: flex; // wegen Zentrierung von svg
   align-items: center; // vertikal zentriert
   justify-content: center; // horizontal zentriert
