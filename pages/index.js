@@ -1,12 +1,12 @@
-// import LoginSection from "@/components/LoginSection";
-import Navbar from "@/components/Navbar";
 import useSWR from "swr";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import styled from "styled-components";
+import Navbar from "@/components/Navbar";
 import EyeIcon from "@/public/icons/eye.svg";
 import EyeSlashIcon from "@/public/icons/eye-slash.svg";
-import Link from "next/link";
-import styled from "styled-components";
-import dynamic from "next/dynamic";
-import { useState, useEffect } from "react";
+import ChartIcon from "@/public/icons/chart.svg";
 
 // hier muss dynamischer Import, sonst ES Module error (auch bei aktuellster next.js-Version)
 const ResponsivePie = dynamic(
@@ -15,122 +15,168 @@ const ResponsivePie = dynamic(
 );
 
 export default function HomePage() {
-  // Initialwert von Zustand von hiddenCategories = aus localStorage
-  // -> NUR, wenn Code im Browser ausgeführt wird, sonst Server Error (localStorage serverseitig nicht verfügbar)
-  const [hiddenCategories, setHiddenCategories] = useState(() => {
-    if (typeof window !== "undefined") {
-      const storedHiddenCategories = localStorage.getItem("hiddenCategories");
-      return storedHiddenCategories ? JSON.parse(storedHiddenCategories) : [];
-    }
-    return [];
-  });
+  const [hiddenCategories, setHiddenCategories] = useState([]);
+  const [isChartOpen, setIsChartOpen] = useState(false);
 
-  // Zustand von hiddenCategories bei Änderung im localStorage speichern
+  // *** [ LOCAL STORAGE ] hidden categories ***********************************************
+  // *** [abrufen]
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    const storedHiddenCategories = localStorage.getItem("hiddenCategories");
+    if (!storedHiddenCategories) return;
+
+    try {
+      const parsedHiddenCategories = JSON.parse(storedHiddenCategories);
+      if (Array.isArray(parsedHiddenCategories)) {
+        setHiddenCategories(parsedHiddenCategories);
+      } // state setzen, nur wenn array okay
+    } catch {
+      // ignorieren -> default []
+    }
+  }, []);
+
+  // *** [speichern]: nur wenn array nicht leer
+  useEffect(() => {
+    if (hiddenCategories.length !== 0) {
       localStorage.setItem(
         "hiddenCategories",
         JSON.stringify(hiddenCategories)
       );
+    } else {
+      localStorage.removeItem("hiddenCategories");
     }
   }, [hiddenCategories]);
 
-  const { data: categories, error } = useSWR("/api/categories");
-  if (error) return <h3>Failed to load categories</h3>;
-  if (!categories) return <h3>Loading...</h3>;
+  // *** [ SESSION STORAGE ] chart-state ***************************************************
+  // *** [abrufen]
+  useEffect(() => {
+    const storedChartState = sessionStorage.getItem("home:isChartOpen");
+    if (storedChartState) setIsChartOpen(true);
+  }, []);
 
+  // *** [speichern]: wenn open
+  useEffect(() => {
+    if (isChartOpen) {
+      sessionStorage.setItem("home:isChartOpen", "true");
+    } else {
+      sessionStorage.removeItem("home:isChartOpen");
+    }
+  }, [isChartOpen]);
+
+  // ***************************************************************************************
+
+  // *** [ fetch ]
+  const { data: categories, error } = useSWR("/api/categories");
+
+  // *** [ guards ]
+  if (error) return <h3>Failed to load categories</h3>;
+  if (!categories) return <h3>Loading ...</h3>;
+
+  // *** [ ABGELEITETE DATEN ] *************************************************************
+  // *** [ 1. categories ] filtern + sortieren *********************************************
+  // *** [filtern]: alle expense + nicht leer
   const expenseCategories = categories.filter(
     (category) => category.type === "Expense" && category.totalAmount > 0
   );
 
-  // erst nach visibility & dann nach totalAmount (absteigend) sortieren
-  expenseCategories.sort((a, b) => {
+  // *** [sortieren]: visibility
+  const sortedCategories = [...expenseCategories].sort((a, b) => {
     const isHiddenA = hiddenCategories.includes(a._id);
     const isHiddenB = hiddenCategories.includes(b._id);
 
-    // wenn beide gleiche visibility haben, nach totalAmount
-    if (isHiddenA === isHiddenB) return b.totalAmount - a.totalAmount;
-
-    // hiddenCategories nach unten
-    return isHiddenA - isHiddenB;
+    if (isHiddenA === isHiddenB) return b.totalAmount - a.totalAmount; // visibility gleich: total amount absteigend
+    return isHiddenA - isHiddenB; // visibility ungleich: hidden nach unten
   });
 
-  // chart
-  const chartData = expenseCategories
-    .filter(
-      (category) =>
-        category.totalAmount > 0 && !hiddenCategories.includes(category._id)
-    )
-    .map((category) => ({
-      id: category.id,
-      label: category.name,
-      value: category.totalAmount,
-      color: category.color,
-    }));
+  // *** [filtern]: nur visible expense (für chart + total expense)
+  const visibleCategories = sortedCategories.filter(
+    (category) => !hiddenCategories.includes(category._id)
+  );
 
-  // Summe aller aktiven Kategorien
-  const totalVisibleAmount = expenseCategories
-    .filter((category) => !hiddenCategories.includes(category._id))
-    .reduce((sum, category) => sum + category.totalAmount, 0);
+  // *** [ 2. chart ] **********************************************************************
+  // *** [chart-data]
+  const chartData = visibleCategories.map((category) => ({
+    id: category._id,
+    label: category.name,
+    value: category.totalAmount,
+    color: category.color,
+  }));
 
-  // EyeIcon
+  // *** [display-section]: Summe angezeigter categories
+  const totalExpense = visibleCategories.reduce(
+    (sum, category) => sum + category.totalAmount,
+    0
+  );
+
+  // *** [tooltip %]
+  function getChartPercentage(value) {
+    if (!totalExpense) return 0;
+    return Math.round((value / totalExpense) * 100);
+  }
+
+  // ***************************************************************************************
+
+  function toggleChart() {
+    setIsChartOpen((prevState) => !prevState);
+  }
+
   function toggleVisibility(categoryId) {
-    setHiddenCategories((prevHiddenCategories) => {
-      const updatedCategories = prevHiddenCategories.includes(categoryId)
-        ? prevHiddenCategories.filter((id) => id !== categoryId) // wenn ID schon in hiddenCategories enthalten, dann entfernen (= neues Array ohne diese ID)
-        : [...prevHiddenCategories, categoryId]; // wenn ID noch nicht in hiddenCategories enthalten, dann hinzufügen (= neues Array mit bestehender Liste + dieser ID)
-
-      return updatedCategories;
-    });
+    setHiddenCategories(
+      (prevState) =>
+        prevState.includes(categoryId)
+          ? prevState.filter((id) => id !== categoryId) // in state -> neues array: ohne diese
+          : [...prevState, categoryId] // nicht in state -> neues array: bestehende list + diese
+    );
   }
 
   return (
-    <PageWrapper>
+    <>
       <ContentContainer>
         {/* <LoginSection /> */}
         <h1>Expenses</h1>
 
-        {chartData.length > 0 && (
-          <ChartContainer>
+        {isChartOpen && chartData.length > 0 && (
+          <PieWrapper>
             <ResponsivePie
               data={chartData}
               colors={{ datum: "data.color" }}
               innerRadius={0.5} // 50 % ausgeschnitten
+              startAngle={0} // Start: oben auf 12 Uhr
+              endAngle={-360} // Ende: volle Runde gegen Uhrzeigersinn
               padAngle={2} // Abstand zw. Segmenten
               cornerRadius={3} // rundere Ecken von Segmenten
               arcLinkLabelsSkipAngle={360} // ausgeblendete Linien
-              // isInteractive={false} // alle Interaktionen weg
               animate={false} // Segmente springen nicht
               enableArcLabels={false} // keine Zahlen im Segment
-              tooltip={({ datum }) => {
-                const percentage = (
-                  (datum.value / totalVisibleAmount) *
-                  100
-                ).toFixed(0);
-                return (
-                  <div>
-                    {datum.label}: <strong>{percentage} %</strong>
-                  </div>
-                );
-              }} // zeigt Name & Summe (%) von Kategorie beim Hovern über Segment (auf Touch-Geräten beim Klicken)
+              tooltip={({ datum }) => (
+                <div>
+                  {datum.label}:{" "}
+                  <strong>{getChartPercentage(datum.value)} %</strong>
+                </div>
+              )}
             />
-          </ChartContainer>
+          </PieWrapper>
         )}
 
-        <BalanceContainer>
-          <p>Total Expenses</p>
-          <p className="value">
-            {totalVisibleAmount.toLocaleString("de-DE", {
+        <DisplaySection>
+          <IconWrapperChart
+            onClick={toggleChart}
+            className={isChartOpen ? "active" : ""}
+          >
+            <ChartIcon />
+          </IconWrapperChart>
+
+          <p>
+            {totalExpense.toLocaleString("de-DE", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}{" "}
             €
           </p>
-        </BalanceContainer>
+        </DisplaySection>
 
         <StyledList>
-          {expenseCategories.map((category) => (
-            <StyledListItem
+          {sortedCategories.map((category) => (
+            <ListItem
               key={category._id}
               $isHidden={hiddenCategories.includes(category._id)}
             >
@@ -142,6 +188,7 @@ export default function HomePage() {
                   $categoryColor={category.color}
                   $isHidden={hiddenCategories.includes(category._id)}
                 />
+
                 <p>{category.name}</p>
                 <p className="amount">
                   {category.totalAmount.toLocaleString("de-DE", {
@@ -153,130 +200,131 @@ export default function HomePage() {
               </StyledLink>
 
               {hiddenCategories.includes(category._id) ? (
-                <IconWrapper onClick={() => toggleVisibility(category._id)}>
+                <IconWrapperEye onClick={() => toggleVisibility(category._id)}>
                   <EyeSlashIcon />
-                </IconWrapper>
+                </IconWrapperEye>
               ) : (
-                <IconWrapper onClick={() => toggleVisibility(category._id)}>
+                <IconWrapperEye onClick={() => toggleVisibility(category._id)}>
                   <EyeIcon />
-                </IconWrapper>
+                </IconWrapperEye>
               )}
-            </StyledListItem>
+            </ListItem>
           ))}
         </StyledList>
-
-        <Navbar />
       </ContentContainer>
-    </PageWrapper>
+
+      <Navbar />
+    </>
   );
 }
 
-const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column; // vertikal angeordnet
-  align-items: center; // ContentContainer vertikal zentriert
-  width: 100%;
-  height: 100vh; // gesamte Höhe von Viewport
-`;
-
 const ContentContainer = styled.div`
-  width: 100%;
-  max-width: 800px; // wegen list & buttons
+  padding: 20px 20px 83px 20px; // Nav 75px // Abstand Bildschirmrand
+  max-width: 350px; // Breite von list
   margin: 0 auto; // content horizontal zentriert
-  display: flex;
-  flex-direction: column; // content untereinander
-  align-items: center; // content zentriert
-  // padding: 20px 20px 75px 20px; // 75px: Nav
-  padding: 20px 70px 75px 70px; // 75px: Nav
 
   h1 {
-    margin-bottom: 20px;
-  }
-
-  @media (max-width: 600px) {
-    padding: 20px 60px 75px 20px;
-  }
-
-  @media (max-width: 400px) {
-    padding: 20px 40px 75px 40px;
+    text-align: center;
+    margin-bottom: 1.5rem;
   }
 `;
 
-const ChartContainer = styled.div`
-  height: 200px;
-  width: 200px;
-
-  @media (max-width: 600px) {
-    height: 150px;
-    width: 150px;
-  }
+const PieWrapper = styled.div`
+  height: 150px;
+  width: 150px;
+  margin: 0 auto 1rem auto; // horizontal zentriert, Abstand DisplaySection
 `;
-const BalanceContainer = styled.div`
-  align-self: flex-end; // rechts im ContentContainer, nicht zentriert
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0 0 20px 0;
 
-  p.value {
+const DisplaySection = styled.div`
+  display: flex; // icon + totalExpense nebeneinander
+  justify-content: space-between; // icon links, totalExpense rechts
+  max-width: 285px; // schmaler als list
+  margin: 0 auto 1.5rem auto; // horizontal zentriert, Abstand list
+
+  p {
     font-weight: bold;
+    font-size: 1.4rem;
+    margin-right: 2.5rem;
+  }
+`;
+
+const IconWrapperChart = styled.div`
+  background-color: var(--button-background-color);
+  color: var(--button-text-color);
+  width: 32px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex; // wegen Zentrierung von svg
+  align-items: center; // vertikal zentriert
+  justify-content: center; // horizontal zentriert
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 1);
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    transform: scale(1.07);
+    color: var(--primary-text-color);
+  }
+
+  &.active {
+    background-color: var(--button-active-color);
+    color: var(--button-active-text-color);
   }
 `;
 
 const StyledList = styled.ul`
-  // list-style-type: none;
-  width: 100%;
+  list-style-type: none;
 `;
 
-const StyledListItem = styled.li`
-  display: grid;
-  grid-template-columns: 1fr auto; // StyledLink | EyeIcon
-  gap: 10px;
-  align-items: center; // wg. ColorTag & EyeIcon
-  color: ${(props) => (props.$isHidden ? "#5a5a5a" : "inherit")};
-  
-  @media (max-width: 600px) {
-    p {
-      font-size: 0.95rem;
-    }
+const ListItem = styled.li`
+  display: flex; // link + icon nebeneinander
+  justify-content: center; // horizontal zentriert
+  margin-bottom: 0.75rem; // Abstand zw. ListItems
+  gap: 1rem; // Abstand link + icon
+
+  opacity: ${(props) => (props.$isHidden ? 0.2 : 1)};
 `;
 
 const StyledLink = styled(Link)`
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
   text-decoration: none;
-  padding: 0 15px 0 15px;
-  height: 40px;
-  width: 100%;
-  margin: 7px 0 7px 0;
-  border-radius: 30px;
+  display: flex; // items nebeneinander
+  align-items: center; // items vertikal zentriert
+  gap: 0.5rem; // Abstand items
+
   background-color: var(--list-item-background);
-  opacity: ${(props) => (props.$isHidden ? 0.5 : 1)}; //
+  height: 2rem;
+  width: 100%; // link füllt Platz in list-Breite
+  border-radius: 20px;
+  padding: 0 1rem; // Abstand Rand
 
   p {
-    color: ${(props) =>
-      props.$isHidden ? "#5a5a5a" : "var(--secondary-text-color)"};
+    font-size: 1rem;
   }
 
   p.amount {
-    text-align: right;
+    margin-left: auto; // rechts
     font-weight: bold;
+    white-space: nowrap;
   }
 
   &:hover {
-    font-weight: bold;
+    transform: scale(1.02);
 
-    p.amount {
-      transform: scale(1.07);
+    p {
+      color: var(--primary-text-color);
     }
   }
 `;
 
-const IconWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
+const IconWrapperEye = styled.div`
+  display: flex; // wegen Zentrierung von svg
+  align-items: center; // vertikal zentriert
+  justify-content: center; // horizontal zentriert
+  cursor: pointer;
 
   svg {
     width: 20px;
@@ -289,16 +337,10 @@ const IconWrapper = styled.div`
 `;
 
 const ColorTag = styled.span`
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  margin-right: 10px;
 
   background-color: ${(props) =>
     props.$isHidden ? "#5a5a5a" : props.$categoryColor};
-
-  @media (max-width: 600px) {
-    width: 10px;
-    height: 10px;
-  }
 `;

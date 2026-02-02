@@ -209,7 +209,7 @@ export default function CategoriesPage() {
 
 const ContentContainer = styled.div`
   padding: 20px 20px 83px 20px; // Nav 75px // Abstand Bildschirmrand
-  max-width: 500px; // Breite von list
+  max-width: 350px; // Breite von list
   margin: 0 auto; // content horizontal zentriert
 
   h1 {
@@ -221,7 +221,7 @@ const ContentContainer = styled.div`
 const ChartSection = styled.div`
   display: flex;
   flex-direction: column; // PieWrapper + BalanceContainer untereinander
-  max-width: 275px; // schmaler als FilterSection
+  max-width: 265px; // schmaler als FilterSection
   margin: 0 auto 1.5rem auto; // Abstand FilterSection, horizontal zentriert
 `;
 
@@ -244,7 +244,7 @@ const FilterSection = styled.div`
   display: flex; // IconWrapper + ButtonContainer nebeneinander
   justify-content: space-between; // icon links, buttons rechts
 
-  max-width: 400px; // schmaler als list
+  max-width: 285px; // schmaler als list
   margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
 `;
 
@@ -278,7 +278,7 @@ const IconWrapper = styled.div`
 
 const ButtonContainer = styled.div`
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
 
   button {
     background-color: var(--button-background-color);
@@ -315,7 +315,7 @@ const ListItem = styled.li`
   margin-bottom: 0.5rem; // Abstand zw. ListItems
 
   opacity: ${(props) =>
-    props.$empty ? 0.3 : 1}; // dunkler bei totalAmount <= 0
+    props.$empty ? 0.2 : 1}; // dunkler bei totalAmount <= 0
 
   &:hover {
     transform: scale(1.02);
@@ -336,7 +336,7 @@ const StyledLink = styled(Link)`
   padding: 0 1rem; // Abstand Rand
 
   p {
-    font-size: 0.8rem;
+    font-size: 1rem;
   }
 
   p.amount {
@@ -347,8 +347,8 @@ const StyledLink = styled(Link)`
 `;
 
 const ColorTag = styled.span`
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
 
   background-color: ${(props) => props.$categoryColor};
