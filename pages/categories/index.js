@@ -106,9 +106,10 @@ export default function CategoriesPage() {
     setIsChartOpen((prevState) => !prevState);
   }
 
-  function switchTypeFilter(type) {
-    if (type === typeFilter) return; // wenn filter bereits aktiv -> nichts
-    setTypeFilter(type); // ansonsten auf anderen type switchen
+  function toggleTypeFilter() {
+    setTypeFilter((prevState) =>
+      prevState === "Expense" ? "Income" : "Expense"
+    );
   }
 
   return (
@@ -141,7 +142,7 @@ export default function CategoriesPage() {
 
             <BalanceContainer>
               <p>
-                {typeFilter === "Income" ? "Total Income" : "Total Expense"}
+                {typeFilter === "Expense" ? "Total Expense" : "Total Income"}
               </p>
 
               <p className="value">
@@ -163,21 +164,9 @@ export default function CategoriesPage() {
             <ChartIcon />
           </IconWrapper>
 
-          <ButtonContainer>
-            <button
-              onClick={() => switchTypeFilter("Income")}
-              className={typeFilter === "Income" ? "active" : ""}
-            >
-              Incomes
-            </button>
-
-            <button
-              onClick={() => switchTypeFilter("Expense")}
-              className={typeFilter === "Expense" ? "active" : ""}
-            >
-              Expenses
-            </button>
-          </ButtonContainer>
+          <button onClick={toggleTypeFilter}>
+            {typeFilter === "Expense" ? "Expenses" : "Incomes"}
+          </button>
         </FilterSection>
 
         <StyledList>
@@ -241,11 +230,27 @@ const BalanceContainer = styled.div`
 `;
 
 const FilterSection = styled.div`
-  display: flex; // IconWrapper + ButtonContainer nebeneinander
-  justify-content: space-between; // icon links, buttons rechts
+  display: flex; // IconWrapper + button nebeneinander
+  justify-content: space-between; // icon links, button rechts
 
   max-width: 285px; // schmaler als list
   margin: 0 auto 1.5rem auto; // Abstand list, horizontal zentriert
+
+  button {
+    background-color: var(--button-active-color);
+    color: var(--button-active-text-color);
+    border: none;
+    width: 90px;
+    height: 30px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 1);
+
+    &:hover {
+      transform: scale(1.04);
+    }
+  }
 `;
 
 const IconWrapper = styled.div`
@@ -273,33 +278,6 @@ const IconWrapper = styled.div`
   &.active {
     background-color: var(--button-active-color);
     color: var(--button-active-text-color);
-  }
-`;
-
-const ButtonContainer = styled.div`
-  display: flex;
-  gap: 0.75rem;
-
-  button {
-    background-color: var(--button-background-color);
-    color: var(--button-text-color);
-    border: none;
-    width: 90px;
-    height: 30px;
-    border-radius: 20px;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 1);
-
-    &:hover {
-      transform: scale(1.04);
-      color: var(--primary-text-color);
-    }
-
-    &.active {
-      background-color: var(--button-active-color);
-      color: var(--button-active-text-color);
-    }
   }
 `;
 
