@@ -36,6 +36,12 @@ export default function FormEditTransaction() {
     (category) => category._id === currentCategoryId
   )?.type;
 
+  // *** [ categories A-Z ]: für dropdown
+  // undefined: user-locale // sensitivity: case- & accent-insensitive
+  const sortedCategories = [...categories].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+  );
+
   // ***************************************************************************************
   // *** [ X-button ]: zurück zur vorherigen page
   function handleCancel() {
@@ -118,7 +124,7 @@ export default function FormEditTransaction() {
             onChange={(event) => setCurrentCategoryId(event.target.value)}
             required
           >
-            {categories.map((category) => (
+            {sortedCategories.map((category) => (
               <option key={category._id} value={category._id}>
                 {category.name}
               </option>
