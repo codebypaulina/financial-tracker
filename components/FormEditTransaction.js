@@ -18,31 +18,70 @@ export default function FormEditTransaction() {
 
   // *** [ states ]
   const [isConfirmOpen, setIsConfirmOpen] = useState(false); // für ConfirmModal
-  const [currentCategoryId, setCurrentCategoryId] = useState(""); // für dropdown in CategoryGroup
+  const [currentCategoryId, setCurrentCategoryId] = useState(""); // category-state: ID für dropdown
+  const [typeFilter, setTypeFilter] = useState(""); // category-state: type für dropdown-filter + ColorTag
+  const [lastSelectedCategoryIdByType, setLastSelectedCategoryIdByType] =
+    useState({
+      Expense: "",
+      Income: "",
+    }); // category-state: zuletzt ausgewählte ID je type für dropdown-filter
 
-  // *** [ sync category-state ]
+  // *** [ sync category-states ]
   useEffect(() => {
-    if (!transaction?.category?._id) return;
+    if (!transaction?.category) return;
+
     setCurrentCategoryId(transaction.category._id);
-  }, [transaction?.category?._id]);
+    setTypeFilter(transaction.category.type);
+
+    setLastSelectedCategoryIdByType({
+      Expense:
+        transaction.category.type === "Expense" ? transaction.category._id : "",
+      Income:
+        transaction.category.type === "Income" ? transaction.category._id : "",
+    });
+  }, [transaction]);
 
   // *** [ guards ]
   if (errorTransaction || errorCategories) return <h3>Failed to load data</h3>;
   if (!transaction || !categories) return <h3>Loading ...</h3>;
 
   // *** [ abgeleitete Daten ] *************************************************************
-  // *** [ type ]: aus aktuellem category-state (für ColorTag)
-  const currentType = categories.find(
-    (category) => category._id === currentCategoryId
-  )?.type;
-
-  // *** [ categories A-Z ]: für dropdown
+  // *** [ categories ]: A-Z sortiert (für dropdown)
   // undefined: user-locale // sensitivity: case- & accent-insensitive
   const sortedCategories = [...categories].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
   );
 
+  // *** [ categories ]: nach type gefiltert (für dropdown)
+  const filteredCategories = sortedCategories.filter(
+    (category) => category.type === typeFilter
+  );
+
   // ***************************************************************************************
+  // *** [ category-select ]
+  function handleCategoryChange(event) {
+    const selectedId = event.target.value;
+    const selectedCategory = categories.find(
+      (category) => category._id === selectedId
+    );
+
+    setCurrentCategoryId(selectedId);
+    setTypeFilter(selectedCategory.type);
+
+    setLastSelectedCategoryIdByType((prev) => ({
+      ...prev,
+      [selectedCategory.type]: selectedId,
+    }));
+  }
+
+  // *** [ type-filter ]
+  function toggleTypeFilter() {
+    const toggledType = typeFilter === "Expense" ? "Income" : "Expense";
+
+    setTypeFilter(toggledType);
+    setCurrentCategoryId(lastSelectedCategoryIdByType[toggledType]);
+  }
+
   // *** [ X-button ]: zurück zur vorherigen page
   function handleCancel() {
     router.back();
@@ -121,17 +160,21 @@ export default function FormEditTransaction() {
             id="category"
             name="category"
             value={currentCategoryId} // category-state
-            onChange={(event) => setCurrentCategoryId(event.target.value)}
+            onChange={handleCategoryChange}
             required
           >
-            {sortedCategories.map((category) => (
+            <option value="" disabled>
+              select ...
+            </option>
+
+            {filteredCategories.map((category) => (
               <option key={category._id} value={category._id}>
                 {category.name}
               </option>
             ))}
           </select>
 
-          <ColorTag $categoryType={currentType} />
+          <ColorTag $categoryType={typeFilter} onClick={toggleTypeFilter} />
         </CategoryGroup>
 
         <label htmlFor="description">Description</label>
@@ -280,14 +323,20 @@ const CategoryGroup = styled.div`
 `;
 
 const ColorTag = styled.div`
-  width: 15px;
-  height: 15px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
   background-color: ${({ $categoryType }) =>
     $categoryType === "Expense"
       ? "var(--expense-color)"
       : "var(--income-color)"};
+
+  &:hover {
+    transform: scale(1.07);
+  }
 `;
 
 const ButtonContainer = styled.div`
