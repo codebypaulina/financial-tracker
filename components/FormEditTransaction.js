@@ -3,53 +3,48 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react"; // effect + state: category-Änderung -> type-Änderung // state: ConfirmModal open/!open
 import styled from "styled-components";
 import ConfirmModal from "./ConfirmModal";
+import CloseIcon from "@/public/icons/close.svg";
 
 export default function FormEditTransaction() {
   const router = useRouter();
-  const { id } = router.query; // ID der entspr. transaction aus URL extrahiert
+  const { id } = router.query; // transaction-ID aus URL
 
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false); // für ConfirmModal: steuert, ob Modal angezeigt wird
-
+  // *** [ fetch ]
   const { data: transaction, error: errorTransaction } = useSWR(
     id ? `/api/transactions/${id}` : null
   );
   const { data: categories, error: errorCategories } =
     useSWR("/api/categories");
 
-  /*** [ type-Änderung ] *****************************************************************************
-    -> manuell: nicht möglich
-    -> dropdown: category-Änderung -> type-Änderung (transaction-type = category-type)         */
+  // *** [ states ]
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false); // für ConfirmModal
+  const [currentCategoryId, setCurrentCategoryId] = useState(""); // für dropdown in CategoryGroup
 
-  // state für aktuelle category(-ID) im dropdown
-  const [currentCategoryId, setCurrentCategoryId] = useState("");
-
-  // default: category(-ID) aus geladener transaction übernehmen
+  // *** [ sync category-state ]
   useEffect(() => {
-    if (!transaction) return; // falls transaction noch nicht geladen
-    setCurrentCategoryId(transaction.category?._id || "");
-  }, [transaction]);
+    if (!transaction?.category?._id) return;
+    setCurrentCategoryId(transaction.category._id);
+  }, [transaction?.category?._id]);
 
-  // guards: um Laufzeitfehler zu verhindern, bis Daten abgerufen werden
+  // *** [ guards ]
   if (errorTransaction || errorCategories) return <h3>Failed to load data</h3>;
-  if (!transaction || !categories || !currentCategoryId)
-    return <h3>Loading ...</h3>;
+  if (!transaction || !categories) return <h3>Loading ...</h3>;
 
-  // um type immer aus aktuell gewählter category abzuleiten
+  // *** [ abgeleitete Daten ] *************************************************************
+  // *** [ type ]: aus aktuellem category-state (für ColorTag)
   const currentType = categories.find(
     (category) => category._id === currentCategoryId
   )?.type;
 
-  // *************************************************************************************************
-
-  // cancel-button: zurück zur vorherigen Seite
+  // ***************************************************************************************
+  // *** [ X-button ]: zurück zur vorherigen page
   function handleCancel() {
     router.back();
   }
 
-  // save-button
+  // *** [ save-button ]
   async function handleSubmit(event) {
     event.preventDefault();
-
     const formData = new FormData(event.target);
     const data = Object.fromEntries(formData);
 
@@ -75,12 +70,13 @@ export default function FormEditTransaction() {
     }
   }
 
-  // 1. delete-button: öffnet ConfirmModal
+  // *** [ delete ]
+  // *** [1. button]: ConfirmModal öffnen
   function handleDelete() {
     setIsConfirmOpen(true);
   }
 
-  // 2. delete-confirm: nach ConfirmModal Löschung
+  // *** [2. confirm-button]: transaction löschen
   async function handleConfirmDelete() {
     try {
       const response = await fetch(`/api/transactions/${id}`, {
@@ -105,57 +101,34 @@ export default function FormEditTransaction() {
   return (
     <PageWrapper>
       <FormContainer onSubmit={handleSubmit}>
-        <h1>Edit Transaction</h1>
+        <FormHeader>
+          <h1>Edit</h1>
 
-        <TypeGroup>
-          <label htmlFor="type" className="label-type">
-            Type:
-          </label>
+          <CloseButton type="button" onClick={handleCancel}>
+            <CloseIcon />
+          </CloseButton>
+        </FormHeader>
 
-          <RadioRow>
-            <RadioOption>
-              <input
-                type="radio"
-                id="income"
-                name="type"
-                value="Income"
-                checked={currentType === "Income"}
-                readOnly // react warning (checked obwohl kein onChange)
-                required
-              />
-              <label htmlFor="income">Income</label>
-            </RadioOption>
+        <label htmlFor="category">Category</label>
+        <CategoryGroup>
+          <select
+            id="category"
+            name="category"
+            value={currentCategoryId} // category-state
+            onChange={(event) => setCurrentCategoryId(event.target.value)}
+            required
+          >
+            {categories.map((category) => (
+              <option key={category._id} value={category._id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
 
-            <RadioOption>
-              <input
-                type="radio"
-                id="expense"
-                name="type"
-                value="Expense"
-                checked={currentType === "Expense"}
-                readOnly // react warning (checked obwohl kein onChange)
-              />
-              <label htmlFor="expense">Expense</label>
-            </RadioOption>
-          </RadioRow>
-        </TypeGroup>
+          <ColorTag $categoryType={currentType} />
+        </CategoryGroup>
 
-        <label htmlFor="category">Category:</label>
-        <select
-          id="category"
-          name="category"
-          value={currentCategoryId} // immer aktueller category-state
-          onChange={(event) => setCurrentCategoryId(event.target.value)} // bei Änderung wird state gesetzt
-          required
-        >
-          {categories.map((category) => (
-            <option key={category._id} value={category._id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-
-        <label htmlFor="description">Description:</label>
+        <label htmlFor="description">Description</label>
         <input
           type="text"
           id="description"
@@ -164,7 +137,7 @@ export default function FormEditTransaction() {
           required
         />
 
-        <label htmlFor="amount">Amount:</label>
+        <label htmlFor="amount">Amount</label>
         <input
           type="number"
           id="amount"
@@ -175,7 +148,7 @@ export default function FormEditTransaction() {
           required
         />
 
-        <label htmlFor="date">Date:</label>
+        <label htmlFor="date">Date</label>
         <input
           type="date"
           id="date"
@@ -188,28 +161,25 @@ export default function FormEditTransaction() {
           <button type="button" onClick={handleDelete}>
             Delete
           </button>
-          <button type="button" onClick={handleCancel}>
-            Cancel
-          </button>
+
           <button type="submit">Save</button>
         </ButtonContainer>
       </FormContainer>
 
       <ConfirmModal
-        open={isConfirmOpen} // immer aktueller state
+        open={isConfirmOpen} // state
         title="Delete transaction?"
         message="Are you sure you want to delete this transaction? This cannot be undone."
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={handleConfirmDelete} // transaction löschen
-        onCancel={() => setIsConfirmOpen(false)} // schließen (Cancel / ESC / Overlay)
+        onCancel={() => setIsConfirmOpen(false)} // schließen (X / ESC / Overlay)
       />
     </PageWrapper>
   );
 }
 
 const PageWrapper = styled.div`
-  padding: 2rem; // Abstand zum Bildschirmrand
   min-height: 100vh; // wrapper mind. wie viewport
   display: flex; // wegen Zentrierung von form
   align-items: center; // form vertikal zentriert
@@ -217,19 +187,14 @@ const PageWrapper = styled.div`
 `;
 
 const FormContainer = styled.form`
-  max-width: 300px;
-  background-color: var(--button-background-color);
+  max-width: 250px;
+  background-color: var(--background-color);
   padding: 1.5rem 2rem 2rem 2rem;
   border-radius: 1.5rem; // abgerundete Ecken
 
-  display: flex; // content vertikal
+  display: flex;
   flex-direction: column; // content untereinander
   box-shadow: 0 0 20px rgba(0, 0, 0, 1);
-
-  h1 {
-    text-align: center;
-    margin-bottom: 1rem; // Abstand zum ersten label
-  }
 
   label {
     font-weight: bold;
@@ -240,7 +205,6 @@ const FormContainer = styled.form`
   input[type="text"],
   input[type="number"],
   input[type="date"] {
-    margin-bottom: 0.8rem; // Abstand zw. Blöcken
     border-radius: 0.5rem; // abgerundete Ecken
     border: 0.07rem solid var(--button-hover-color);
     height: 1.5rem;
@@ -249,76 +213,82 @@ const FormContainer = styled.form`
     accent-color: var(--button-hover-color);
   }
 
-  select {
-    cursor: pointer;
+  input[type="text"],
+  input[type="number"] {
+    margin-bottom: 0.8rem; // Abstand zw. Blöcken
   }
 
   input[type="date"] {
-    margin-bottom: 0; // letztes input-Feld kein Abstand zu ButtonContainer
     cursor: text;
   }
 `;
 
-const TypeGroup = styled.div`
-  display: flex; // Type & RadioRow in einer Reihe
-  flex-wrap: wrap; // Umbruch von Type & RadioRow, wenn nicht genug Platz
-  margin-bottom: 1rem; // Abstand zu Category
+const FormHeader = styled.div`
+  display: flex; // h1 + CloseButton nebeneinander
+  align-items: center; // h1 + CloseButton vetikal zentriert
+  margin-bottom: 1rem; // Abstand zum ersten label
 
-  // *** Abstand zw. Type & RadioRow: ***************************************
-  // margin, nicht margin-right! (im FormContainer haben label margin-bottom)
-  .label-type {
-    margin: 0 1rem 0 0;
-
-    @media (max-width: 338px) {
-      margin: 0 0.75rem 0 0; // kleiner
-    }
-    @media (max-width: 326px) {
-      margin: 0 0.75rem 0.35rem 0; // bei Umbruch auch unten
-    }
-  }
-  // ************************************************************************
-
-  @media (max-width: 326px) {
-    margin-bottom: 0.8rem; // Abstand zu Category bei Umbruch von Type & Radiorow
+  h1 {
+    font-size: 1.5rem;
+    flex: 1; // nimmt restlichen Platz in FormHeader
+    text-align: center;
   }
 `;
 
-const RadioRow = styled.div`
-  display: flex; // beide RadioOptions nebeneinander
+const CloseButton = styled.button`
+  background: transparent;
+  border: none;
+  cursor: pointer;
 
-  // *** Abstand zw. RadioOptions: *******************************************
-  gap: 1rem;
+  svg {
+    width: 22px;
+    height: 22px;
+    filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.9)); // ohne Ecken
+  }
+  svg path[class*="circle"] {
+    fill: var(--button-background-color);
+  }
+  svg path[class*="X"] {
+    fill: var(--button-text-color);
+  }
 
-  @media (max-width: 338px) {
-    gap: 0.5rem; // kleiner
+  &:hover {
+    transform: scale(1.07);
+
+    svg path[class*="X"] {
+      fill: var(--primary-text-color);
+    }
   }
-  @media (max-width: 326px) {
-    gap: 1rem; // bei Umbruch von Type & Radiorow wieder normal
-  }
-  // **************************************************************************
 `;
 
-const RadioOption = styled.div`
-  input#income {
-    accent-color: var(--income-color);
-  }
-  input#expense {
-    accent-color: var(--expense-color);
-  }
+const CategoryGroup = styled.div`
+  display: flex; // select + ColorTag nebeneinander
+  align-items: center; // ColorTag vertikal zentriert
+  gap: 0.75rem; // Abstand select + ColorTag
+  margin-bottom: 0.8rem; // Abstand Block Description
 
-  label {
-    margin-left: 0.35rem; // Abstand zw. radio & label
-    font-size: 0.9rem;
-    font-weight: normal;
+  select {
+    flex: 1; // nimmt restlichen Platz in CategoryGroup
+    cursor: pointer;
   }
+`;
+
+const ColorTag = styled.div`
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+
+  background-color: ${({ $categoryType }) =>
+    $categoryType === "Expense"
+      ? "var(--expense-color)"
+      : "var(--income-color)"};
 `;
 
 const ButtonContainer = styled.div`
   margin-top: 2rem; // Abstand zum letzten input
   display: flex; // wegen Zentrierung
   justify-content: center; // buttons zentriert
-  gap: 0.8rem; // Abstand zw. buttons
-  flex-wrap: wrap; // Umbruch; buttons untereinander
+  gap: 0.8rem;
 
   button {
     border: none;
@@ -327,10 +297,13 @@ const ButtonContainer = styled.div`
     min-height: 30px;
     cursor: pointer;
     font-weight: bold;
-    background-color: var(--secondary-text-color);
+    background-color: var(--button-background-color);
+    color: var(--button-text-color);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
     &:hover {
       transform: scale(1.07);
+      color: var(--primary-text-color);
     }
   }
 `;
