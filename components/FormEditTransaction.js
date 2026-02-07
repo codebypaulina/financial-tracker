@@ -164,7 +164,7 @@ export default function FormEditTransaction() {
             required
           >
             <option value="" disabled>
-              select ...
+              Select
             </option>
 
             {filteredCategories.map((category) => (

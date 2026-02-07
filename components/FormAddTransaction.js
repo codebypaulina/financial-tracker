@@ -1,7 +1,8 @@
 import useSWR from "swr";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react"; // für: category-Auswahl -> automatische type-Auswahl
+import { useEffect, useState } from "react";
 import styled from "styled-components";
+import CloseIcon from "@/public/icons/close.svg";
 
 /*** [ Auswahl category(-ID) + category-type ]**************************************************************************
  
@@ -111,59 +112,38 @@ export default function FormAddTransaction({ onCancel }) {
   return (
     <PageWrapper>
       <FormContainer onSubmit={handleSubmit}>
-        <h1>Add Transaction</h1>
+        <FormHeader>
+          <h1>Add</h1>
 
-        <TypeGroup>
-          <label htmlFor="type" className="label-type">
-            Type:
-          </label>
+          <CloseButton type="button" onClick={handleCancel}>
+            <CloseIcon />
+          </CloseButton>
+        </FormHeader>
 
-          <RadioRow>
-            <RadioOption>
-              <input
-                type="radio"
-                id="income"
-                name="type"
-                value="Income"
-                checked={selectedType === "Income"} // immer aktueller type-state (selectedType)
-                onChange={() => handleTypeSelect("Income")} // Fall D
-                required
-              />
-              <label htmlFor="income">Income</label>
-            </RadioOption>
-
-            <RadioOption>
-              <input
-                type="radio"
-                id="expense"
-                name="type"
-                value="Expense"
-                checked={selectedType === "Expense"} // immer aktueller type-state (selectedType)
-                onChange={() => handleTypeSelect("Expense")} // Fall D
-              />
-              <label htmlFor="expense">Expense</label>
-            </RadioOption>
-          </RadioRow>
-        </TypeGroup>
-
-        <label htmlFor="category">Category:</label>
-        <select
-          id="category"
-          name="category"
-          value={selectedCategoryId} // immer aktueller category-state (selectedCategoryId)
-          onChange={(event) => setSelectedCategoryId(event.target.value)} // Fall C: bei Auswahl wird category-state gesetzt
-          required
-        >
-          <option value="">Select</option>
-
-          {allCategories.map((category) => (
-            <option key={category._id} value={category._id}>
-              {category.name}
+        <label htmlFor="category">Category</label>
+        <CategoryGroup>
+          <select
+            id="category"
+            name="category"
+            value={selectedCategoryId} // immer aktueller category-state (selectedCategoryId)
+            onChange={(event) => setSelectedCategoryId(event.target.value)} // Fall C: bei Auswahl wird category-state gesetzt
+            required
+          >
+            <option value="" disabled>
+              Select
             </option>
-          ))}
-        </select>
 
-        <label htmlFor="description">Description:</label>
+            {allCategories.map((category) => (
+              <option key={category._id} value={category._id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+
+          <ColorTag />
+        </CategoryGroup>
+
+        <label htmlFor="description">Description</label>
         <input
           type="text"
           id="description"
@@ -172,7 +152,7 @@ export default function FormAddTransaction({ onCancel }) {
           required
         />
 
-        <label htmlFor="amount">Amount:</label>
+        <label htmlFor="amount">Amount</label>
         <input
           type="number"
           id="amount"
@@ -183,15 +163,10 @@ export default function FormAddTransaction({ onCancel }) {
           required
         />
 
-        <label htmlFor="date">Date:</label>
+        <label htmlFor="date">Date</label>
         <input type="date" id="date" name="date" required />
 
-        <ButtonContainer>
-          <button type="button" onClick={handleCancel}>
-            Cancel
-          </button>
-          <button type="submit">Save</button>
-        </ButtonContainer>
+        <button type="submit">Save</button>
       </FormContainer>
     </PageWrapper>
   );
@@ -199,26 +174,20 @@ export default function FormAddTransaction({ onCancel }) {
 
 const PageWrapper = styled.div`
   min-height: 100vh; // wrapper mind. wie viewport
-  padding: 2rem; // Abstand zum Bildschirmrand
   display: flex; // wegen Zentrierung von form
   align-items: center; // form vertikal zentriert
   justify-content: center; // form horizontal zentriert
 `;
 
 const FormContainer = styled.form`
-  max-width: 300px;
-  background-color: var(--button-background-color);
+  max-width: 250px;
+  background-color: var(--background-color);
   padding: 1.5rem 2rem 2rem 2rem;
   border-radius: 1.5rem; // abgerundete Ecken
 
   display: flex; // content vertikal
   flex-direction: column; // content untereinander
   box-shadow: 0 0 20px rgba(0, 0, 0, 1);
-
-  h1 {
-    text-align: center;
-    margin-bottom: 1rem; // Abstand zum ersten label
-  }
 
   label {
     font-weight: bold;
@@ -229,7 +198,6 @@ const FormContainer = styled.form`
   input[type="text"],
   input[type="number"],
   input[type="date"] {
-    margin-bottom: 0.8rem; // Abstand zw. Blöcken
     border-radius: 0.5rem; // abgerundete Ecken
     border: 0.07rem solid var(--button-hover-color);
     height: 1.5rem;
@@ -238,92 +206,99 @@ const FormContainer = styled.form`
     accent-color: var(--button-hover-color);
   }
 
-  select {
-    cursor: pointer;
+  input[type="text"],
+  input[type="number"] {
+    margin-bottom: 0.8rem; // Abstand zw. Blöcken
   }
 
   input[type="date"] {
-    margin-bottom: 0; // letztes input-Feld kein Abstand zu ButtonContainer
     cursor: text;
   }
-`;
 
-const TypeGroup = styled.div`
-  display: flex; // Type & RadioRow in einer Reihe
-  flex-wrap: wrap; // Umbruch von Type & RadioRow, wenn nicht genug Platz
-  margin-bottom: 1rem; // Abstand zu Category
+  button[type="submit"] {
+    margin-top: 2rem; // Abstand zum letzten input
+    align-self: center;
 
-  // *** Abstand zw. Type & RadioRow: ***************************************
-  // margin, nicht margin-right! (im FormContainer haben label margin-bottom)
-  .label-type {
-    margin: 0 1rem 0 0;
-
-    @media (max-width: 338px) {
-      margin: 0 0.75rem 0 0; // kleiner
-    }
-    @media (max-width: 326px) {
-      margin: 0 0.75rem 0.35rem 0; // bei Umbruch auch unten
-    }
-  }
-  // ************************************************************************
-
-  @media (max-width: 326px) {
-    margin-bottom: 0.8rem; // Abstand zu Category bei Umbruch von Type & Radiorow
-  }
-`;
-
-const RadioRow = styled.div`
-  display: flex; // beide RadioOptions nebeneinander
-
-  // *** Abstand zw. RadioOptions: *******************************************
-  gap: 1rem;
-
-  @media (max-width: 338px) {
-    gap: 0.5rem; // kleiner
-  }
-  @media (max-width: 326px) {
-    gap: 1rem; // bei Umbruch von Type & Radiorow wieder normal
-  }
-  // **************************************************************************
-`;
-
-const RadioOption = styled.div`
-  input {
-    cursor: pointer;
-    margin-right: 0.35rem; // Abstand zw. radio & label
-  }
-
-  input#income {
-    accent-color: var(--income-color);
-  }
-  input#expense {
-    accent-color: var(--expense-color);
-  }
-
-  label {
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: normal;
-  }
-`;
-
-const ButtonContainer = styled.div`
-  margin-top: 2rem; // Abstand zum letzten input
-  display: flex; // wegen Zentrierung
-  justify-content: center; // buttons zentriert
-  gap: 1rem; // Abstand zw. buttons
-
-  button {
     border: none;
     border-radius: 20px;
-    min-width: 70px;
-    min-height: 30px;
+    width: 70px;
+    height: 30px;
     cursor: pointer;
     font-weight: bold;
-    background-color: var(--secondary-text-color);
+    background-color: var(--button-background-color);
+    color: var(--button-text-color);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 
     &:hover {
       transform: scale(1.07);
+      color: var(--primary-text-color);
     }
+  }
+`;
+
+const FormHeader = styled.div`
+  display: flex; // h1 + CloseButton nebeneinander
+  align-items: center; // h1 + CloseButton vetikal zentriert
+  margin-bottom: 1rem; // Abstand zum ersten label
+
+  h1 {
+    font-size: 1.5rem;
+    flex: 1; // nimmt restlichen Platz in FormHeader
+    text-align: center;
+  }
+`;
+
+const CloseButton = styled.button`
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  svg {
+    width: 22px;
+    height: 22px;
+    filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.9)); // ohne Ecken
+  }
+  svg path[class*="circle"] {
+    fill: var(--button-background-color);
+  }
+  svg path[class*="X"] {
+    fill: var(--button-text-color);
+  }
+
+  &:hover {
+    transform: scale(1.07);
+
+    svg path[class*="X"] {
+      fill: var(--primary-text-color);
+    }
+  }
+`;
+
+const CategoryGroup = styled.div`
+  display: flex; // select + ColorTag nebeneinander
+  align-items: center; // ColorTag vertikal zentriert
+  gap: 0.75rem; // Abstand select + ColorTag
+  margin-bottom: 0.8rem; // Abstand Block Description
+
+  select {
+    flex: 1; // nimmt restlichen Platz in CategoryGroup
+    cursor: pointer;
+  }
+`;
+
+const ColorTag = styled.div`
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 1);
+
+  background-color: ${({ $categoryType }) =>
+    $categoryType === "Expense"
+      ? "var(--expense-color)"
+      : "var(--income-color)"};
+
+  &:hover {
+    transform: scale(1.07);
   }
 `;
