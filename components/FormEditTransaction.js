@@ -174,7 +174,13 @@ export default function FormEditTransaction() {
             ))}
           </select>
 
-          <ColorTag $categoryType={typeFilter} onClick={toggleTypeFilter} />
+          <ColorTag
+            type="button"
+            aria-label="Switch between income and expense categories"
+            title={`${typeFilter} (click to switch)`}
+            onClick={toggleTypeFilter}
+            $categoryType={typeFilter}
+          />
         </CategoryGroup>
 
         <label htmlFor="description">Description</label>
@@ -322,10 +328,11 @@ const CategoryGroup = styled.div`
   }
 `;
 
-const ColorTag = styled.div`
+const ColorTag = styled.button`
   width: 20px;
   height: 20px;
   border-radius: 50%;
+  border: none;
   cursor: pointer;
   box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 

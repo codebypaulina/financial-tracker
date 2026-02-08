@@ -4,70 +4,62 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import CloseIcon from "@/public/icons/close.svg";
 
-/*** [ Auswahl category(-ID) + category-type ]**************************************************************************
- 
-  Fall A (preselection: URL enthält query-params):
-  CategoryDetailsPage -> FormAddTransaction: category & type aus URL
-
-  Fall B (keine preselection: URL ohne query):
-  AddingPage -> FormAddTransaction: category & type leer
-
-  Fall C (manuelle category-Auswahl):
-  Fall C1: Auswahl "Select" (= category-ID leer): type wieder unselected
-  Fall C2: Auswahl category (= category-ID vorhanden): type automatisch passend
-
-  Fall D (manuelle type-Auswahl):
-  -> nur solange keine category ausgewählt ist
-  -> sobald Auswahl von category: Fall C
-
-  ***********************************************************************************************************************/
-
 export default function FormAddTransaction({ onCancel }) {
   // onCancel von AddingPage für cancel-button
   const router = useRouter();
-  const { category: queryCategoryId, type: queryType } = router.query; // für preselection (Fall A)
+  const { category: queryCategoryId } = router.query;
 
-  const { data: allCategories, error } = useSWR("/api/categories"); // für dropdown, um categories abzurufen
+  const { data: categories, error } = useSWR("/api/categories");
 
   // *********************************************************************************************************************
   // states für category(-ID) + category-type:
-  const [selectedCategoryId, setSelectedCategoryId] = useState(""); // aktuell gewählte category im dropdown
-  const [selectedType, setSelectedType] = useState(""); // aktuell gewählter type
+  const [currentCategoryId, setCurrentCategoryId] = useState(""); // ID für dropdown
+  const [typeFilter, setTypeFilter] = useState("Expense"); // type für dropdown-filter + ColorTag
 
-  // Fall A + B:
+  // *** [ sync states ] *******************************************************************
+  // *** [1. aktuelle category]: aus url (ID preselected aus CategoryDetailsPage)
   useEffect(() => {
-    if (!router.isReady) return; // falls router noch nicht rdy (keine query-params)
+    if (router.isReady) setCurrentCategoryId(queryCategoryId || "");
+  }, [router.isReady, queryCategoryId]);
 
-    setSelectedCategoryId(queryCategoryId || ""); // category-ID aus URL (Fall A) oder leer (Fall B)
-    setSelectedType(queryType || ""); // type aus URL (Fall A) oder leer (Fall B)
-  }, [router.isReady, queryCategoryId, queryType]); // wenn query verfügbar / aktualisiert wird
-
-  // Fall C:
+  // *** [2. type-filter]: aus aktueller category (filter preselected aus CategoryDetailsPage)
   useEffect(() => {
-    if (!allCategories) return; // falls categories noch nicht geladen
+    if (!categories) return;
+    if (!currentCategoryId) return;
 
-    // Fall C1: wenn keine category-ID, dann type leer
-    if (!selectedCategoryId) {
-      setSelectedType("");
-      return;
-    }
-
-    // Fall C2:
-    const selectedCategory = allCategories.find(
-      (category) => category._id === selectedCategoryId // sucht category-object mit ausgewählter category(-ID)
+    const currentCategory = categories.find(
+      (category) => category._id === currentCategoryId
     );
 
-    // wenn category-object gefunden, dann type aus category-object
-    if (selectedCategory) {
-      setSelectedType(selectedCategory.type);
+    if (currentCategory) {
+      setTypeFilter(currentCategory.type);
     }
-  }, [selectedCategoryId, allCategories]); // bei category-Wechsel / wenn categories (neu) geladen werden
+  }, [categories, currentCategoryId]);
 
-  // *********************************************************************************************************************
+  // ***************************************************************************************
 
   // verhindert Laufzeitfehler bis categories über SWR abgerufen werden:
   if (error) return <h3>Failed to load data</h3>;
-  if (!allCategories) return <h3>Loading ...</h3>;
+  if (!categories) return <h3>Loading ...</h3>;
+
+  // *** [ abgeleitete Daten ] *************************************************************
+  // *** [categories sortieren]: A-Z (für dropdown)
+  // undefined: user-locale // sensitivity: case- & accent-insensitive
+  const sortedCategories = [...categories].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+  );
+
+  // *** [categories filtern]: nach type (für dropdown)
+  const filteredCategories = sortedCategories.filter(
+    (category) => category.type === typeFilter
+  );
+
+  // ***************************************************************************************
+  // *** [ type-filter-button ]
+  function toggleTypeFilter() {
+    setTypeFilter((prev) => (prev === "Expense" ? "Income" : "Expense"));
+    setCurrentCategoryId(""); // dropdown: "Select"
+  }
 
   // cancel-button:
   // wenn onCancel von AddingPage übergeben wird, dann dorthin zurück (selection view), sonst zurück zu CategoryDetailsPage
@@ -104,11 +96,6 @@ export default function FormAddTransaction({ onCancel }) {
     }
   }
 
-  // Fall D: type-radio
-  function handleTypeSelect(type) {
-    if (!selectedCategoryId) setSelectedType(type); // wenn category-state leer, manuelle type-Auswahl
-  }
-
   return (
     <PageWrapper>
       <FormContainer onSubmit={handleSubmit}>
@@ -125,22 +112,28 @@ export default function FormAddTransaction({ onCancel }) {
           <select
             id="category"
             name="category"
-            value={selectedCategoryId} // immer aktueller category-state (selectedCategoryId)
-            onChange={(event) => setSelectedCategoryId(event.target.value)} // Fall C: bei Auswahl wird category-state gesetzt
+            value={currentCategoryId} // state
+            onChange={(event) => setCurrentCategoryId(event.target.value)}
             required
           >
             <option value="" disabled>
               Select
             </option>
 
-            {allCategories.map((category) => (
+            {filteredCategories.map((category) => (
               <option key={category._id} value={category._id}>
                 {category.name}
               </option>
             ))}
           </select>
 
-          <ColorTag />
+          <ColorTag
+            type="button"
+            aria-label="Switch between income and expense categories"
+            title={`${typeFilter} (click to switch)`}
+            onClick={toggleTypeFilter}
+            $categoryType={typeFilter}
+          />
         </CategoryGroup>
 
         <label htmlFor="description">Description</label>
@@ -286,10 +279,11 @@ const CategoryGroup = styled.div`
   }
 `;
 
-const ColorTag = styled.div`
+const ColorTag = styled.button`
   width: 20px;
   height: 20px;
   border-radius: 50%;
+  border: none;
   cursor: pointer;
   box-shadow: 0 0 20px rgba(0, 0, 0, 1);
 

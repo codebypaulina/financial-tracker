@@ -88,12 +88,7 @@ export default function CategoryDetailsPage() {
         </ul>
       )}
 
-      <AddButton
-        onClick={() =>
-          router.push(`/adding?category=${id}&type=${category.type}`)
-        }
-      >
-        {" "}
+      <AddButton onClick={() => router.push(`/adding?category=${id}`)}>
         <AddIcon />
       </AddButton>
     </ContentContainer>
