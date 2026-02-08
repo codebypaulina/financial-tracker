@@ -15,6 +15,11 @@ export default function FormAddTransaction({ onCancel }) {
   // states für category(-ID) + category-type:
   const [currentCategoryId, setCurrentCategoryId] = useState(""); // ID für dropdown
   const [typeFilter, setTypeFilter] = useState("Expense"); // type für dropdown-filter + ColorTag
+  const [lastSelectedCategoryIdByType, setLastSelectedCategoryIdByType] =
+    useState({
+      Expense: "",
+      Income: "",
+    }); // zuletzt ausgewählte ID je type für dropdown-memory
 
   // *** [ sync states ] *******************************************************************
   // *** [1. aktuelle category]: aus url (ID preselected aus CategoryDetailsPage)
@@ -22,7 +27,7 @@ export default function FormAddTransaction({ onCancel }) {
     if (router.isReady) setCurrentCategoryId(queryCategoryId || "");
   }, [router.isReady, queryCategoryId]);
 
-  // *** [2. type-filter]: aus aktueller category (filter preselected aus CategoryDetailsPage)
+  // *** [2. type-filter & memory]: aus aktueller category (für preselection)
   useEffect(() => {
     if (!categories) return;
     if (!currentCategoryId) return;
@@ -30,10 +35,13 @@ export default function FormAddTransaction({ onCancel }) {
     const currentCategory = categories.find(
       (category) => category._id === currentCategoryId
     );
+    if (!currentCategory) return;
 
-    if (currentCategory) {
-      setTypeFilter(currentCategory.type);
-    }
+    setTypeFilter(currentCategory.type);
+    setLastSelectedCategoryIdByType((prev) => ({
+      ...prev,
+      [currentCategory.type]: currentCategoryId,
+    }));
   }, [categories, currentCategoryId]);
 
   // ***************************************************************************************
@@ -55,10 +63,25 @@ export default function FormAddTransaction({ onCancel }) {
   );
 
   // ***************************************************************************************
+  // *** [ category-select ]
+  function handleCategoryChange(event) {
+    const selectedId = event.target.value;
+    setCurrentCategoryId(selectedId); // ausgewählte ID als aktuelle category
+
+    if (selectedId) {
+      setLastSelectedCategoryIdByType((prev) => ({
+        ...prev,
+        [typeFilter]: selectedId,
+      }));
+    } // wenn ID ausgewählt, dann diese als memory für aktiven type-filter
+  }
+
   // *** [ type-filter-button ]
   function toggleTypeFilter() {
-    setTypeFilter((prev) => (prev === "Expense" ? "Income" : "Expense"));
-    setCurrentCategoryId(""); // dropdown: "Select"
+    const toggledType = typeFilter === "Expense" ? "Income" : "Expense";
+
+    setTypeFilter(toggledType);
+    setCurrentCategoryId(lastSelectedCategoryIdByType[toggledType] || ""); // memory dieses types oder "Select"
   }
 
   // cancel-button:
@@ -113,7 +136,7 @@ export default function FormAddTransaction({ onCancel }) {
             id="category"
             name="category"
             value={currentCategoryId} // state
-            onChange={(event) => setCurrentCategoryId(event.target.value)}
+            onChange={handleCategoryChange}
             required
           >
             <option value="" disabled>
