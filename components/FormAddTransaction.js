@@ -5,14 +5,14 @@ import styled from "styled-components";
 import CloseIcon from "@/public/icons/close.svg";
 
 export default function FormAddTransaction({ onCancel }) {
-  // onCancel von AddingPage für cancel-button
+  // onCancel von AddingPage für X-button
   const router = useRouter();
   const { category: queryCategoryId } = router.query;
 
+  // *** [ fetch ]
   const { data: categories, error } = useSWR("/api/categories");
 
-  // *********************************************************************************************************************
-  // states für category(-ID) + category-type:
+  // *** [ states ]
   const [currentCategoryId, setCurrentCategoryId] = useState(""); // ID für dropdown
   const [typeFilter, setTypeFilter] = useState("Expense"); // type für dropdown-filter + ColorTag
   const [lastSelectedCategoryIdByType, setLastSelectedCategoryIdByType] =
@@ -21,7 +21,7 @@ export default function FormAddTransaction({ onCancel }) {
       Income: "",
     }); // zuletzt ausgewählte ID je type für dropdown-memory
 
-  // *** [ sync states ] *******************************************************************
+  // *** [ sync states ]
   // *** [1. aktuelle category]: aus url (ID preselected aus CategoryDetailsPage)
   useEffect(() => {
     if (router.isReady) setCurrentCategoryId(queryCategoryId || "");
@@ -44,9 +44,7 @@ export default function FormAddTransaction({ onCancel }) {
     }));
   }, [categories, currentCategoryId]);
 
-  // ***************************************************************************************
-
-  // verhindert Laufzeitfehler bis categories über SWR abgerufen werden:
+  // *** [ guards ]
   if (error) return <h3>Failed to load data</h3>;
   if (!categories) return <h3>Loading ...</h3>;
 
@@ -62,8 +60,7 @@ export default function FormAddTransaction({ onCancel }) {
     (category) => category.type === typeFilter
   );
 
-  // ***************************************************************************************
-  // *** [ category-select ]
+  // *** [ category-select ] ***************************************************************
   function handleCategoryChange(event) {
     const selectedId = event.target.value;
     setCurrentCategoryId(selectedId); // ausgewählte ID als aktuelle category
@@ -73,7 +70,7 @@ export default function FormAddTransaction({ onCancel }) {
         ...prev,
         [typeFilter]: selectedId,
       }));
-    } // wenn ID ausgewählt, dann diese als memory für aktiven type-filter
+    } // wenn ID ausgewählt, dann diese in memory für aktiven type-filter
   }
 
   // *** [ type-filter-button ]
@@ -81,16 +78,16 @@ export default function FormAddTransaction({ onCancel }) {
     const toggledType = typeFilter === "Expense" ? "Income" : "Expense";
 
     setTypeFilter(toggledType);
-    setCurrentCategoryId(lastSelectedCategoryIdByType[toggledType] || ""); // memory dieses types oder "Select"
+    setCurrentCategoryId(lastSelectedCategoryIdByType[toggledType] || ""); // memory für type / "Select"
   }
 
-  // cancel-button:
-  // wenn onCancel von AddingPage übergeben wird, dann dorthin zurück (selection view), sonst zurück zu CategoryDetailsPage
+  // *** [ X-button ]
+  // wenn onCancel (AddingPage), dann dorthin zurück, sonst zu CategoryDetailsPage
   function handleCancel() {
     return onCancel ? onCancel() : router.back();
   }
 
-  // save-button
+  // *** [ save-button ]
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -108,7 +105,7 @@ export default function FormAddTransaction({ onCancel }) {
 
       if (response.ok) {
         console.log("ADDING SUCCESSFUL! (transaction)");
-        router.back(); // nach erfolgreichem Hinzufügen neuer transaction zurück zur vorherigen page
+        router.back();
       } else {
         throw new Error(
           `Failed to add new transaction (status: ${response.status})`
@@ -174,13 +171,19 @@ export default function FormAddTransaction({ onCancel }) {
           id="amount"
           name="amount"
           placeholder=" 0,00 €"
-          step="any" // Kommazahlen; "any" statt "0.01", weils nur so in FormEditTransaction ging
+          step="any" // Kommazahlen (any statt 0.01: in FormEditTransaction geht nur so)
           min="0.01"
           required
         />
 
         <label htmlFor="date">Date</label>
-        <input type="date" id="date" name="date" required />
+        <input
+          type="date"
+          id="date"
+          name="date"
+          defaultValue={new Date().toISOString().slice(0, 10)} // heute
+          required
+        />
 
         <button type="submit">Save</button>
       </FormContainer>

@@ -24,7 +24,7 @@ export default function FormEditTransaction() {
     useState({
       Expense: "",
       Income: "",
-    }); // category-state: zuletzt ausgewählte ID je type für dropdown-filter
+    }); // category-state: zuletzt ausgewählte ID je type für dropdown-memory
 
   // *** [ sync category-states ]
   useEffect(() => {
@@ -32,7 +32,6 @@ export default function FormEditTransaction() {
 
     setCurrentCategoryId(transaction.category._id);
     setTypeFilter(transaction.category.type);
-
     setLastSelectedCategoryIdByType({
       Expense:
         transaction.category.type === "Expense" ? transaction.category._id : "",
@@ -46,19 +45,18 @@ export default function FormEditTransaction() {
   if (!transaction || !categories) return <h3>Loading ...</h3>;
 
   // *** [ abgeleitete Daten ] *************************************************************
-  // *** [ categories ]: A-Z sortiert (für dropdown)
+  // *** [categories sortieren]: A-Z (für dropdown)
   // undefined: user-locale // sensitivity: case- & accent-insensitive
   const sortedCategories = [...categories].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
   );
 
-  // *** [ categories ]: nach type gefiltert (für dropdown)
+  // *** [categories filtern]: nach type (für dropdown)
   const filteredCategories = sortedCategories.filter(
     (category) => category.type === typeFilter
   );
 
-  // ***************************************************************************************
-  // *** [ category-select ]
+  // *** [ category-select ] ***************************************************************
   function handleCategoryChange(event) {
     const selectedId = event.target.value;
     const selectedCategory = categories.find(
@@ -67,14 +65,13 @@ export default function FormEditTransaction() {
 
     setCurrentCategoryId(selectedId);
     setTypeFilter(selectedCategory.type);
-
     setLastSelectedCategoryIdByType((prev) => ({
       ...prev,
       [selectedCategory.type]: selectedId,
     }));
   }
 
-  // *** [ type-filter ]
+  // *** [ type-filter-button ]
   function toggleTypeFilter() {
     const toggledType = typeFilter === "Expense" ? "Income" : "Expense";
 
@@ -82,7 +79,7 @@ export default function FormEditTransaction() {
     setCurrentCategoryId(lastSelectedCategoryIdByType[toggledType]);
   }
 
-  // *** [ X-button ]: zurück zur vorherigen page
+  // *** [ X-button ]
   function handleCancel() {
     router.back();
   }
@@ -104,7 +101,7 @@ export default function FormEditTransaction() {
 
       if (response.ok) {
         console.log("UPDATING SUCCESSFUL! (transaction)");
-        router.back(); // zurück zur vorherigen page
+        router.back();
       } else {
         throw new Error(
           `Failed to update transaction (status: ${response.status})`
@@ -159,7 +156,7 @@ export default function FormEditTransaction() {
           <select
             id="category"
             name="category"
-            value={currentCategoryId} // category-state
+            value={currentCategoryId} // state
             onChange={handleCategoryChange}
             required
           >
@@ -198,7 +195,7 @@ export default function FormEditTransaction() {
           id="amount"
           name="amount"
           defaultValue={transaction.amount}
-          step="any" // hier Kommazahlen nur so (nicht "0.01")
+          step="any" // hier Kommazahlen nur so (nicht 0.01)
           min="0.01"
           required
         />
@@ -208,7 +205,7 @@ export default function FormEditTransaction() {
           type="date"
           id="date"
           name="date"
-          defaultValue={transaction.date.slice(0, 10)} // nimmt nur erste 10 Zeichen aus Datum-String: YYYY-MM-DD
+          defaultValue={transaction.date.slice(0, 10)} // nur YYYY-MM-DD
           required
         />
 
