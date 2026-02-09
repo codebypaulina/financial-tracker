@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import styled from "styled-components";
@@ -13,52 +14,62 @@ const ResponsivePie = dynamic(
 );
 
 export default function CategoriesPage() {
+  const router = useRouter();
+  const { isReady, query, replace } = router;
+  const type = query.type; // von FormAddCategory für type-filter
+
+  // *** [ states ]
   const [typeFilter, setTypeFilter] = useState("Expense");
   const [isChartOpen, setIsChartOpen] = useState(false);
 
-  // *** [ session storage ] ***************************************************************
-  // *** [ 1. CHART-state ] ****************************************************************
+  // *** [ SESSION STORAGE ] ***************************************************************
+  // *** [ 1. chart-state ] ****************************************************************
   // *** [abrufen]
   useEffect(() => {
-    // holt gespeicherten key aus storage (state = true / null)
     const storedChartState = sessionStorage.getItem("categories:isChartOpen");
-
-    // wenn key existiert -> state = true
     if (storedChartState) setIsChartOpen(true);
-  }, []); // läuft nur 1x bei 1. render
+  }, []);
 
-  // *** [speichern]: bei Änderung
+  // *** [speichern]: wenn state = true
   useEffect(() => {
-    // (nur) wenn state = true -> key in storage speichern
     if (isChartOpen) {
       sessionStorage.setItem("categories:isChartOpen", "true");
     } else {
-      // ansonsten key löschen (damit default = false)
       sessionStorage.removeItem("categories:isChartOpen");
     }
-  }, [isChartOpen]); // läuft nur, wenn sich state ändert (= true)
+  }, [isChartOpen]);
 
-  // *** [ 2. TYPE-filter ] ****************************************************************
-  // *** [abrufen]
+  // *** [ 2. type-filter ] ****************************************************************
+  // *** [abrufen aus url]: wenn query von FormAddCategory
   useEffect(() => {
-    const storedTypeFilter = sessionStorage.getItem("categories:typeFilter");
-
-    if (storedTypeFilter === "Income") {
-      setTypeFilter("Income"); // wenn income gespeichert -> wiederherstellen
+    if (!isReady) return;
+    if (type === "Income" || type === "Expense") {
+      setTypeFilter(type); // type in url: in filter
+      replace("/categories", undefined, { shallow: true }); // url wieder /categories, nichts maskieren, kein remount
     }
-  }, []);
+  }, [isReady, type, replace]);
 
-  // *** [speichern]
+  // *** [abrufen aus storage]: wenn kein query
+  useEffect(() => {
+    if (!isReady) return;
+    if (type === "Income" || type === "Expense") return; // type in url: abbrechen, nicht aus storage
+
+    const storedTypeFilter = sessionStorage.getItem("categories:typeFilter");
+    if (storedTypeFilter === "Income") {
+      setTypeFilter("Income"); // income in storage: in filter
+    }
+  }, [isReady, type]);
+
+  // *** [speichern]: nur wenn income
   useEffect(() => {
     if (typeFilter === "Income") {
-      sessionStorage.setItem("categories:typeFilter", "Income"); // nur bei Wechsel zu income
+      sessionStorage.setItem("categories:typeFilter", "Income");
     } else {
       sessionStorage.removeItem("categories:typeFilter");
     }
   }, [typeFilter]);
 
   // ***************************************************************************************
-
   // *** [ fetch ]
   const { data: categories, error } = useSWR("/api/categories");
 
@@ -66,8 +77,8 @@ export default function CategoriesPage() {
   if (error) return <h3>Failed to load categories</h3>;
   if (!categories) return <h3>Loading ...</h3>;
 
-  // *** [ abgeleitete Daten ] *************************************************************
-  // *** [ 1. CATEGORIES ] filtern & sortieren *********************************************
+  // *** [ ABGELEITETE DATEN ] *************************************************************
+  // *** [ 1. categories ] filtern + sortieren *********************************************
   const sortedActiveCategories = [...categories]
     .filter((category) => category.type === typeFilter) // nur aktiver type
     .sort((a, b) => {
@@ -77,7 +88,7 @@ export default function CategoriesPage() {
       return a.name.localeCompare(b.name, "de-DE"); // Betrag gleich: A-Z
     });
 
-  // *** [ 2. CHART ] **********************************************************************
+  // *** [ 2. chart ] **********************************************************************
   // *** [chart-data]
   const chartData = sortedActiveCategories
     .filter((category) => category.totalAmount > 0)

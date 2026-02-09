@@ -22,7 +22,6 @@ export default function FormAddCategory({ onCancel }) {
   // *** [ save-button ]
   async function handleSubmit(event) {
     event.preventDefault();
-
     const formData = new FormData(event.target);
     const data = Object.fromEntries(formData);
 
@@ -37,7 +36,7 @@ export default function FormAddCategory({ onCancel }) {
 
       if (response.ok) {
         console.log("ADDING SUCCESSFUL! (category)");
-        router.back();
+        router.push(`/categories?type=${categoryType}`); // zu CategoriesPage mit type-filter = type neuer category
       } else {
         throw new Error(
           `Failed to add new category (status: ${response.status})`
