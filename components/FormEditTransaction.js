@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react"; // effect + state: category-Änderung -> type-Änderung // state: ConfirmModal open/!open
 import styled from "styled-components";
@@ -99,14 +99,16 @@ export default function FormEditTransaction() {
         body: JSON.stringify(data),
       });
 
-      if (response.ok) {
-        console.log("UPDATING SUCCESSFUL! (transaction)");
-        router.back();
-      } else {
+      if (!response.ok) {
         throw new Error(
           `Failed to update transaction (status: ${response.status})`
         );
       }
+
+      const updated = await response.json();
+      mutate(`/api/transactions/${id}`, updated, false); // SWR-detail-cache: mit updated values überschreiben (reopened form)
+      console.log("UPDATING SUCCESSFUL! (transaction)");
+      router.back();
     } catch (error) {
       console.error("Error updating transaction: ", error);
     }

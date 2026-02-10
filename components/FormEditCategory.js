@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import styled from "styled-components";
@@ -51,14 +51,17 @@ export default function FormEditCategory() {
         body: JSON.stringify(data),
       });
 
-      if (response.ok) {
-        console.log("UPDATING SUCCESSFUL! (category)");
-        router.back(); // zurück zur vorherigen page
-      } else {
+      if (!response.ok) {
         throw new Error(
           `Failed to update category (status: ${response.status})`
         );
       }
+
+      // SWR-detail-cache: revalidieren, um category.transactionCount nicht zu überschreiben
+      // -> values geupdated (CategoryDetailsPage + reopened form)
+      mutate(`/api/categories/${id}`);
+      console.log("UPDATING SUCCESSFUL! (category)");
+      router.back();
     } catch (error) {
       console.error("Error updating category: ", error);
     }
