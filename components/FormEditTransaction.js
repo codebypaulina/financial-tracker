@@ -146,7 +146,12 @@ export default function FormEditTransaction() {
         <FormHeader>
           <h1>Edit</h1>
 
-          <CloseButton type="button" onClick={handleCancel}>
+          <CloseButton
+            type="button"
+            aria-label="Close form"
+            title="Close"
+            onClick={handleCancel}
+          >
             <CloseIcon />
           </CloseButton>
         </FormHeader>
@@ -156,6 +161,8 @@ export default function FormEditTransaction() {
           <select
             id="category"
             name="category"
+            aria-label="Update category"
+            title="Category"
             value={currentCategoryId} // state
             onChange={handleCategoryChange}
             required
@@ -173,7 +180,7 @@ export default function FormEditTransaction() {
 
           <ColorTag
             type="button"
-            aria-label="Switch between income and expense categories"
+            aria-label="Switch category filter"
             title={`${typeFilter} (click to switch)`}
             onClick={toggleTypeFilter}
             $categoryType={typeFilter}
@@ -185,6 +192,8 @@ export default function FormEditTransaction() {
           type="text"
           id="description"
           name="description"
+          aria-label="Update description"
+          title="Description"
           defaultValue={transaction.description}
           required
         />
@@ -194,9 +203,12 @@ export default function FormEditTransaction() {
           type="number"
           id="amount"
           name="amount"
+          aria-label="Update amount"
+          title="Amount"
           defaultValue={transaction.amount}
-          step="any" // hier Kommazahlen nur so (nicht 0.01)
+          inputMode="decimal"
           min="0.01"
+          step="any" // Kommazahlen (0.01 geht nicht)
           required
         />
 
@@ -205,16 +217,25 @@ export default function FormEditTransaction() {
           type="date"
           id="date"
           name="date"
+          aria-label="Update date"
+          title="Date"
           defaultValue={transaction.date.slice(0, 10)} // nur YYYY-MM-DD
           required
         />
 
         <ButtonContainer>
-          <button type="button" onClick={handleDelete}>
+          <button
+            type="button"
+            aria-label="Delete transaction"
+            title="Delete transaction"
+            onClick={handleDelete}
+          >
             Delete
           </button>
 
-          <button type="submit">Save</button>
+          <button type="submit" aria-label="Save changes" title="Save">
+            Save
+          </button>
         </ButtonContainer>
       </FormContainer>
 

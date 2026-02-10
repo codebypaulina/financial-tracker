@@ -105,7 +105,12 @@ export default function FormEditCategory() {
         <FormHeader>
           <h1>Edit</h1>
 
-          <CloseButton type="button" onClick={handleCancel}>
+          <CloseButton
+            type="button"
+            aria-label="Close form"
+            title="Close"
+            onClick={handleCancel}
+          >
             <CloseIcon />
           </CloseButton>
         </FormHeader>
@@ -116,6 +121,8 @@ export default function FormEditCategory() {
             type="text"
             id="name"
             name="name"
+            aria-label="Update category name"
+            title="Name"
             defaultValue={category.name}
             required
           />
@@ -123,7 +130,7 @@ export default function FormEditCategory() {
           <input type="hidden" name="type" value={categoryType} />
           <ColorTag
             type="button"
-            aria-label="Switch between income and expense category type"
+            aria-label="Switch category type"
             title={`${categoryType} (click to switch)`}
             onClick={toggleCategoryType}
             $categoryType={categoryType}
@@ -135,16 +142,25 @@ export default function FormEditCategory() {
           type="color"
           id="color"
           name="color"
+          aria-label="Update category color"
+          title="Color"
           defaultValue={category.color}
           required
         />
 
         <ButtonContainer>
-          <button type="button" onClick={handleDelete}>
+          <button
+            type="button"
+            aria-label="Delete category"
+            title="Delete"
+            onClick={handleDelete}
+          >
             Delete
           </button>
 
-          <button type="submit">Save</button>
+          <button type="submit" aria-label="Save changes" title="Save">
+            Save
+          </button>
         </ButtonContainer>
       </FormContainer>
 

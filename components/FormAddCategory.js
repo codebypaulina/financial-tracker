@@ -53,7 +53,12 @@ export default function FormAddCategory({ onCancel }) {
         <FormHeader>
           <h1>Add</h1>
 
-          <CloseButton type="button" onClick={handleCancel}>
+          <CloseButton
+            type="button"
+            aria-label="Close form"
+            title="Close"
+            onClick={handleCancel}
+          >
             <CloseIcon />
           </CloseButton>
         </FormHeader>
@@ -64,6 +69,8 @@ export default function FormAddCategory({ onCancel }) {
             type="text"
             id="name"
             name="name"
+            aria-label="Enter category name"
+            title="Name"
             placeholder=" ..."
             required
           />
@@ -71,7 +78,7 @@ export default function FormAddCategory({ onCancel }) {
           <input type="hidden" name="type" value={categoryType} />
           <ColorTag
             type="button"
-            aria-label="Switch between income and expense category type"
+            aria-label="Switch category type"
             title={`${categoryType} (click to switch)`}
             onClick={toggleCategoryType}
             $categoryType={categoryType}
@@ -83,11 +90,15 @@ export default function FormAddCategory({ onCancel }) {
           type="color"
           id="color"
           name="color"
+          aria-label="Select category color"
+          title="Color"
           defaultValue="#ffffff"
           required
         />
 
-        <button type="submit">Save</button>
+        <button type="submit" aria-label="Save category" title="Save">
+          Save
+        </button>
       </FormContainer>
     </PageWrapper>
   );

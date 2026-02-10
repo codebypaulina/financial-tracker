@@ -122,7 +122,12 @@ export default function FormAddTransaction({ onCancel }) {
         <FormHeader>
           <h1>Add</h1>
 
-          <CloseButton type="button" onClick={handleCancel}>
+          <CloseButton
+            type="button"
+            aria-label="Close form"
+            title="Close"
+            onClick={handleCancel}
+          >
             <CloseIcon />
           </CloseButton>
         </FormHeader>
@@ -132,6 +137,8 @@ export default function FormAddTransaction({ onCancel }) {
           <select
             id="category"
             name="category"
+            aria-label="Select category"
+            title="Category"
             value={currentCategoryId} // state
             onChange={handleCategoryChange}
             required
@@ -149,7 +156,7 @@ export default function FormAddTransaction({ onCancel }) {
 
           <ColorTag
             type="button"
-            aria-label="Switch between income and expense categories"
+            aria-label="Switch category filter"
             title={`${typeFilter} (click to switch)`}
             onClick={toggleTypeFilter}
             $categoryType={typeFilter}
@@ -161,6 +168,8 @@ export default function FormAddTransaction({ onCancel }) {
           type="text"
           id="description"
           name="description"
+          aria-label="Enter description"
+          title="Description"
           placeholder=" ..."
           required
         />
@@ -170,9 +179,12 @@ export default function FormAddTransaction({ onCancel }) {
           type="number"
           id="amount"
           name="amount"
+          aria-label="Enter amount"
+          title="Amount"
           placeholder=" 0,00 €"
-          step="any" // Kommazahlen (any statt 0.01: in FormEditTransaction geht nur so)
+          inputMode="decimal"
           min="0.01"
+          step="any" // Kommazahlen (in FormEditTransaction geht 0.01 nicht)
           required
         />
 
@@ -181,11 +193,15 @@ export default function FormAddTransaction({ onCancel }) {
           type="date"
           id="date"
           name="date"
+          aria-label="Select date"
+          title="Date"
           defaultValue={new Date().toISOString().slice(0, 10)} // heute
           required
         />
 
-        <button type="submit">Save</button>
+        <button type="submit" aria-label="Save transaction" title="Save">
+          Save
+        </button>
       </FormContainer>
     </PageWrapper>
   );
