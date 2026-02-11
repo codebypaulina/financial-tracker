@@ -2,7 +2,7 @@ import useSWR, { mutate } from "swr";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react"; // effect + state: category-Änderung -> type-Änderung // state: ConfirmModal open/!open
 import styled from "styled-components";
-import ConfirmModal from "./ConfirmModal";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 import CloseIcon from "@/public/icons/close.svg";
 
 export default function FormEditTransaction() {
@@ -17,7 +17,7 @@ export default function FormEditTransaction() {
     useSWR("/api/categories");
 
   // *** [ states ]
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false); // für ConfirmModal
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false); // für DeleteConfirmModal
   const [currentCategoryId, setCurrentCategoryId] = useState(""); // category-state: ID für dropdown
   const [typeFilter, setTypeFilter] = useState(""); // category-state: type für dropdown-filter + ColorTag
   const [lastSelectedCategoryIdByType, setLastSelectedCategoryIdByType] =
@@ -115,7 +115,7 @@ export default function FormEditTransaction() {
   }
 
   // *** [ delete ]
-  // *** [1. button]: ConfirmModal öffnen
+  // *** [1. button]: DeleteConfirmModal öffnen
   function handleDelete() {
     setIsConfirmOpen(true);
   }
@@ -241,12 +241,9 @@ export default function FormEditTransaction() {
         </ButtonContainer>
       </FormContainer>
 
-      <ConfirmModal
+      <DeleteConfirmModal
         open={isConfirmOpen} // state
-        title="Delete transaction?"
-        message="Are you sure you want to delete this transaction? This cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        message={<p>Are you sure you want to delete this transaction?</p>}
         onConfirm={handleConfirmDelete} // transaction löschen
         onCancel={() => setIsConfirmOpen(false)} // schließen (X / ESC / Overlay)
       />

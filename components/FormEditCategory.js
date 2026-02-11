@@ -2,7 +2,7 @@ import useSWR, { mutate } from "swr";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import styled from "styled-components";
-import ConfirmModal from "./ConfirmModal";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 import CloseIcon from "@/public/icons/close.svg";
 
 export default function FormEditCategory() {
@@ -13,7 +13,7 @@ export default function FormEditCategory() {
   const { data: category, error } = useSWR(id ? `/api/categories/${id}` : null);
 
   // *** [ states ]
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false); // für ConfirmModal
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false); // für DeleteConfirmModal
   const [categoryType, setCategoryType] = useState("");
 
   // *** [ sync type-state ]
@@ -68,7 +68,7 @@ export default function FormEditCategory() {
   }
 
   // *** [ delete ]
-  // *** [1. button]: ConfirmModal öffnen
+  // *** [1. button]: DeleteConfirmModal öffnen
   function handleDelete() {
     setIsConfirmOpen(true);
   }
@@ -167,20 +167,18 @@ export default function FormEditCategory() {
         </ButtonContainer>
       </FormContainer>
 
-      <ConfirmModal
+      <DeleteConfirmModal
         open={isConfirmOpen} // state
-        title={
-          category.transactionCount > 0
-            ? "Delete category & transactions?"
-            : "Delete category?"
-        }
         message={
-          category.transactionCount > 0
-            ? "Are you sure you want to delete this category & all included transactions? This cannot be undone."
-            : "Are you sure you want to delete this category? This cannot be undone."
+          category.transactionCount > 0 ? (
+            <p>
+              Are you sure you want to delete this category & all included
+              transactions?
+            </p>
+          ) : (
+            <p>Are you sure you want to delete this category?</p>
+          )
         }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
         onConfirm={handleConfirmDelete} // category löschen
         onCancel={() => setIsConfirmOpen(false)} // schließen (X / ESC / Overlay)
       />
