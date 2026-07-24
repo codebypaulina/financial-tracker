@@ -59,13 +59,6 @@ export default function CategoryDetailsPage() {
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   // *** [ SYNC ] **************************************************************************
-  // *** [ category name ]: bei Änderung ***************************************************
-  useEffect(() => {
-    if (!category?.name) return;
-    setCatName(category.name);
-    setCatNameError("");
-  }, [category?.name]);
-
   // *** [ < > nav ] ***********************************************************************
   // *** [ session storage ]: snapshot abrufen
   useEffect(() => {
