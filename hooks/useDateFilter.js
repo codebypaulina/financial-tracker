@@ -104,14 +104,6 @@ export default function useDateFilter(storageKey) {
     ); // nicht default range: speichern
   }, [storageKey, defaultRange, dateFilter, dateFilterTemplate]);
 
-  // *** [ picker range: aus date filter ]
-  useEffect(() => {
-    if (!isDatePickerOpen) return;
-
-    setPickerRange(dateFilter);
-    setPickerVisibleMonth(dateFilter.from);
-  }, [isDatePickerOpen, dateFilter]);
-
   // *** [ HANDLERS ] **************************************************************
   // *** [ DateNav < > ] ***********************************************************
   function updateDateFilter(
@@ -125,6 +117,8 @@ export default function useDateFilter(storageKey) {
 
   // *** [ DatePicker ] ************************************************************
   function openPicker() {
+    setPickerRange(dateFilter);
+    setPickerVisibleMonth(dateFilter.from);
     setIsDatePickerOpen(true);
   }
 
