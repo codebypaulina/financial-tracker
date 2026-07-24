@@ -1,5 +1,11 @@
 import useSWR, { mutate } from "swr";
-import { useState, useEffect, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import styled from "styled-components";
@@ -27,6 +33,22 @@ import {
   getRangeBounds,
 } from "@/utils/dateFilter";
 
+// *** [ < > nav ] *************************************************************
+// *** [ subscription ]: Änderungen am snapshot abonnieren
+// snapshot wird direkt vor CategoryDetailsPage in session storage gespeichert
+// sub nicht nötig, weil er sich in CategoryDetailsPage nicht ändert
+function subscribeToNavSnapshot() {
+  return () => {};
+}
+
+// *** [ server-snapshot ]
+// session storage = browser-API, existiert nicht während server-rendering
+// leerer snapshot = storage wird nicht aufgerufen
+function getServerNavSnapshot() {
+  return null;
+}
+// *****************************************************************************
+
 export default function CategoryDetailsPage() {
   const router = useRouter();
   const { id, from, dateFrom, dateTo, navKey } = router.query;
@@ -48,8 +70,6 @@ export default function CategoryDetailsPage() {
   } = useSWR(getTransactionsKey(userId));
 
   // *** [ STATES ]
-  const [navIds, setNavIds] = useState(null); // für < > nav (snapshot ID-Reihenfolge category-list)
-
   const [isFormAddTxOpen, setIsFormAddTxOpen] = useState(false);
   const [editingTxId, setEditingTxId] = useState(null);
 
@@ -60,19 +80,28 @@ export default function CategoryDetailsPage() {
 
   // *** [ SYNC ] **************************************************************************
   // *** [ < > nav ] ***********************************************************************
-  // *** [ session storage ]: snapshot abrufen
-  useEffect(() => {
-    if (!router.isReady) return;
-    if (!navKey) return;
+  // *** [ snapshot ]: aus session storage abrufen
+  const getNavSnapshot = useCallback(
+    () => (typeof navKey === "string" ? sessionStorage.getItem(navKey) : null),
+    [navKey]
+  ); // liest snapshot anhand navKey aus storage
 
-    const storedIds = sessionStorage.getItem(navKey);
-    if (!storedIds) return;
+  const storedNavIds = useSyncExternalStore(
+    subscribeToNavSnapshot,
+    getNavSnapshot,
+    getServerNavSnapshot
+  ); // snapshot als ID-JSON-string
+
+  const navIds = useMemo(() => {
+    if (!storedNavIds) return null;
 
     try {
-      const parsedIds = JSON.parse(storedIds);
-      if (Array.isArray(parsedIds)) setNavIds(parsedIds);
-    } catch {}
-  }, [router.isReady, navKey]);
+      const parsedIds = JSON.parse(storedNavIds);
+      return Array.isArray(parsedIds) ? parsedIds : null;
+    } catch {
+      return null;
+    }
+  }, [storedNavIds]); // ID-JSON-string -> ID-array
 
   // *** [ nav IDs ]: prev / next **********************************************************
   const index = navIds ? navIds.indexOf(id) : -1; // aktuelle ID im array
