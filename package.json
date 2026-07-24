@@ -14,7 +14,7 @@
     "@nivo/core": "0.99.0",
     "@nivo/pie": "0.99.0",
     "mongodb": "^6.9.0",
-    "mongoose": "^8.7.0",
+    "mongoose": "8.24.1",
     "next": "16.2.11",
     "next-auth": "^4.24.15",
     "react": "19.2.8",
