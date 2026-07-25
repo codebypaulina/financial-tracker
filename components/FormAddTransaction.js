@@ -1,5 +1,5 @@
 import useSWR, { useSWRConfig } from "swr";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import styled from "styled-components";
 
@@ -12,6 +12,7 @@ import { TX_DESCRIPTION_MAX_LENGTH, TX_AMOUNT_MIN } from "@/utils/constants";
 
 export default function FormAddTransaction({
   initialCategoryId = "", // CategoryDetailsPage
+  initialCategorType = "Expense", // CategoryDetailsPage
   onTxAdded, // CategoryDetailsPage
   closeForm, // AddingPage + CategoryDetailsPage
 }) {
@@ -27,33 +28,15 @@ export default function FormAddTransaction({
 
   // *** [ STATES ]
   const [currentCategoryId, setCurrentCategoryId] = useState(initialCategoryId); // ID für dropdown
-  const [typeFilter, setTypeFilter] = useState("Expense"); // type für dropdown-filter + ColorTag
+  const [typeFilter, setTypeFilter] = useState(initialCategorType); // type für dropdown-filter + ColorTag
   const [lastSelectedCategoryIdByType, setLastSelectedCategoryIdByType] =
     useState({
-      Expense: "",
-      Income: "",
+      Expense: initialCategorType === "Expense" ? initialCategoryId : "",
+      Income: initialCategorType === "Income" ? initialCategoryId : "",
     }); // zuletzt ausgewählte ID je type für dropdown-memory
 
   // *** [ SYNC ] **************************************************************************
-  // *** [1. type-filter + memory]: aus aktueller category
-  useEffect(() => {
-    if (!categories) return;
-    if (!currentCategoryId) return;
-
-    const currentCategory = categories.find(
-      (category) => category._id === currentCategoryId
-    );
-    if (!currentCategory) return;
-
-    setTypeFilter(currentCategory.type);
-    setLastSelectedCategoryIdByType((prev) => ({
-      ...prev,
-      [currentCategory.type]: currentCategoryId,
-    }));
-  }, [categories, currentCategoryId]);
-
-  // *** [ 2. ESC-listener ]
-  useEscapeClose(true, closeForm);
+  useEscapeClose(true, closeForm); // ESC-listener
 
   // *** [ GUARDS ] ************************************************************************
   if (error) {
