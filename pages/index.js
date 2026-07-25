@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback, useMemo, useSyncExternalStore } from "react";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import styled from "styled-components";
@@ -17,15 +17,52 @@ import useSessionStorageState from "@/hooks/useSessionStorageState";
 import { getCategoriesKey, getTransactionsKey } from "@/utils/swrKeys";
 import { formatCurrency } from "@/utils/helpers";
 
+// *** [ local storage ]: hidden categories ****************************
+const HIDDEN_CATS_CHANGE_EVENT = "bout2getcha:hidden-cats-change";
+
+// *** [ subscription ]: Änderungen am storage -> react-callback registrieren
+function subscribeToHiddenCats(callback) {
+  window.addEventListener(HIDDEN_CATS_CHANGE_EVENT, callback);
+
+  return () => {
+    window.removeEventListener(HIDDEN_CATS_CHANGE_EVENT, callback);
+  };
+}
+
+// *** [ change-event ]: nach Änderung storage-snapshot neu einlesen
+function emitHiddenCatsChange() {
+  window.dispatchEvent(new Event(HIDDEN_CATS_CHANGE_EVENT));
+}
+
+// *** [ server-snapshot ]: null -> storage wird nicht aufgerufen
+function getServerHiddenCatsSnapshot() {
+  return null;
+}
+
+// *********************************************************************
+
+function parseHiddenCatsSnapshot(storedSnapshot) {
+  if (!storedSnapshot) return [];
+
+  try {
+    const parsedHiddenCats = JSON.parse(storedSnapshot);
+    return Array.isArray(parsedHiddenCats) ? parsedHiddenCats : [];
+  } catch {
+    return [];
+  }
+} // stored snapshot JSON-string -> ID-array
+
+// *********************************************************************
+
 export default function HomePage() {
   const pageTitle = "Expenses";
 
-  const [hiddenCategories, setHiddenCategories] = useState([]);
   const [hoveredCategoryId, setHoveredCategoryId] = useState(null); // category- + segment-hover
 
   // *** [ AUTH ]
   const { data: session } = useSession();
   const userId = session?.user?.userId; // user-ID (für local + session storage / data-fetch)
+  const hiddenCatsStorageKey = userId ? `u:${userId}:hiddenCats` : null;
 
   // *** [ DATA-FETCH ]
   const { data: categories, error: errorCategories } = useSWR(
@@ -36,37 +73,27 @@ export default function HomePage() {
   );
 
   // *** [ SYNC ] **************************************************************************
-  // *** [ 1. hidden categories ]: local storage *******************************************
-  // *** [abrufen]
-  useEffect(() => {
-    if (!userId) return;
-    const key = `u:${userId}:hiddenCategories`;
-    const storedHiddenCategories = localStorage.getItem(key);
-    if (!storedHiddenCategories) return;
+  // *** [ 1. hidden categories ]: aus local storage abrufen *******************************
+  const getHiddenCatsSnapshot = useCallback(
+    () =>
+      typeof hiddenCatsStorageKey === "string"
+        ? localStorage.getItem(hiddenCatsStorageKey)
+        : null,
+    [hiddenCatsStorageKey]
+  ); // snapshot anhand hiddenCatsStorageKey aus storage lesen
 
-    try {
-      const parsedHiddenCategories = JSON.parse(storedHiddenCategories);
-      if (Array.isArray(parsedHiddenCategories)) {
-        setHiddenCategories(parsedHiddenCategories);
-      } // state setzen, nur wenn array okay
-    } catch {
-      // ignorieren -> default
-    }
-  }, [userId]);
+  const storedHiddenCatsSnapshot = useSyncExternalStore(
+    subscribeToHiddenCats,
+    getHiddenCatsSnapshot,
+    getServerHiddenCatsSnapshot
+  ); // snapshot als JSON-string
 
-  // *** [speichern]: nur wenn array nicht leer
-  useEffect(() => {
-    if (!userId) return;
-    const key = `u:${userId}:hiddenCategories`;
+  const hiddenCategories = useMemo(
+    () => parseHiddenCatsSnapshot(storedHiddenCatsSnapshot),
+    [storedHiddenCatsSnapshot]
+  ); // JSON-string -> ID-array
 
-    if (hiddenCategories.length !== 0) {
-      localStorage.setItem(key, JSON.stringify(hiddenCategories));
-    } else {
-      localStorage.removeItem(key);
-    }
-  }, [userId, hiddenCategories]);
-
-  // *** [ 2. chart-state ]: session storage ***********************************************
+  // *** [ 2. chart-state ]: aus session storage abrufen ***********************************
   // default: closed  ||  in storage: wenn open
   const [isChartOpen, setIsChartOpen] = useSessionStorageState(
     userId ? `u:${userId}:home:isChartOpen` : null,
@@ -192,12 +219,22 @@ export default function HomePage() {
   }
 
   function toggleVisibility(categoryId) {
-    setHiddenCategories(
-      (prevState) =>
-        prevState.includes(categoryId)
-          ? prevState.filter((id) => id !== categoryId) // in state -> neues array: ohne diese
-          : [...prevState, categoryId] // nicht in state -> neues array: bestehende list + diese
-    );
+    if (!hiddenCatsStorageKey) return;
+
+    const nextHiddenCats = hiddenCategories.includes(categoryId)
+      ? hiddenCategories.filter((id) => id !== categoryId) // ID im array -> neues array: ohne diese
+      : [...hiddenCategories, categoryId]; // ID nicht im array -> neues array: bestehende list + diese
+
+    if (nextHiddenCats.length === 0) {
+      localStorage.removeItem(hiddenCatsStorageKey); // ID-array leer: nicht in storage speichern
+    } else {
+      localStorage.setItem(
+        hiddenCatsStorageKey,
+        JSON.stringify(nextHiddenCats)
+      ); // in storage speichern
+    }
+
+    emitHiddenCatsChange(); // veränderten snapshot neu einlesen
   }
 
   return (
