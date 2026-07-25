@@ -7,7 +7,13 @@
   - handlers: open + close picker, apply + clear picker range, update date-filter
 *********************************************************************************/
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
 import {
   parseDateString,
   getDefaultRange,
@@ -15,6 +21,18 @@ import {
   parseStoredTemplate,
   buildDateFilterForStorage,
 } from "@/utils/dateFilter";
+
+// *** [ session storage ] *************************************************
+// *** [ subscription ]: nicht nötig -> Änderungen über localDateFilterState
+function subscribeToDateFilterSnapshot() {
+  return () => {};
+}
+
+// *** [ server-snapshot ]: leer -> storage wird nicht aufgerufen
+function getServerDateFilterSnapshot() {
+  return null;
+}
+// *************************************************************************
 
 export default function useDateFilter(storageKey) {
   // *** [ default ]
@@ -25,39 +43,40 @@ export default function useDateFilter(storageKey) {
   );
 
   // *** [ STATES ]
-  const [dateFilter, setDateFilter] = useState(defaultRange);
-  const [dateFilterTemplate, setDateFilterTemplate] = useState(defaultTemplate); // range-Vorlage für < >
+  const [localDateFilterState, setLocalDateFilterState] = useState(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [pickerRange, setPickerRange] = useState(defaultRange);
   const [pickerVisibleMonth, setPickerVisibleMonth] = useState(
     defaultRange.from
   );
-  const skipNextWrite = useRef(true);
 
   // *** [ SYNC ] ******************************************************************
-  // *** [ date filter: session storage abrufen ]
-  useEffect(() => {
-    skipNextWrite.current = true;
+  // *** [ stored date filter ]: aus session storage abrufen ***********************
+  const getDateFilterSnapshot = useCallback(
+    () =>
+      typeof storageKey === "string"
+        ? sessionStorage.getItem(storageKey)
+        : null,
+    [storageKey]
+  ); // snapshot aus storage lesen anhand storageKey (`u:${userId}:transactions:dateFilter` / `u:${userId}:categories:dateFilter`)
 
-    function resetToDefaultRange() {
-      setDateFilter(defaultRange);
-      setDateFilterTemplate(defaultTemplate);
-    }
+  const storedDateFilterSnapshot = useSyncExternalStore(
+    subscribeToDateFilterSnapshot,
+    getDateFilterSnapshot,
+    getServerDateFilterSnapshot
+  ); // date-filter-snapshot als JSON-string
 
-    // storageKey: `u:${userId}:transactions:dateFilter` // `u:${userId}:categories:dateFilter`
-    if (!storageKey) {
-      resetToDefaultRange();
-      return; // kein key: default
-    }
+  const storedDateFilterState = useMemo(() => {
+    const fallbackState = {
+      range: defaultRange,
+      template: defaultTemplate,
+      isInvalid: false,
+    };
 
-    const storedDateFilter = sessionStorage.getItem(storageKey);
-    if (!storedDateFilter) {
-      resetToDefaultRange();
-      return;
-    } // key ohne Wert: default
+    if (!storedDateFilterSnapshot) return fallbackState;
 
     try {
-      const parsedDateFilter = JSON.parse(storedDateFilter);
+      const parsedDateFilter = JSON.parse(storedDateFilterSnapshot);
       const storedFrom = parseDateString(parsedDateFilter?.from);
       const storedTo = parseDateString(parsedDateFilter?.to);
 
@@ -66,51 +85,34 @@ export default function useDateFilter(storageKey) {
         !storedTo ||
         storedFrom.getTime() > storedTo.getTime()
       ) {
-        sessionStorage.removeItem(storageKey);
-        resetToDefaultRange();
-        return;
+        return { ...fallbackState, isInvalid: true };
       } // key mit ungültigem Wert: default
 
-      setDateFilter({ from: storedFrom, to: storedTo });
-      setDateFilterTemplate(
-        parseStoredTemplate(parsedDateFilter, storedFrom, storedTo)
-      ); // key vorhanden + gültig: in state
+      return {
+        range: { from: storedFrom, to: storedTo },
+        template: parseStoredTemplate(parsedDateFilter, storedFrom, storedTo),
+        isInvalid: false,
+      }; // key vorhanden + gültig: range + template zurück
     } catch {
-      sessionStorage.removeItem(storageKey);
-      resetToDefaultRange();
+      return { ...fallbackState, isInvalid: true };
     }
-  }, [storageKey, defaultRange, defaultTemplate]);
+  }, [storedDateFilterSnapshot, defaultRange, defaultTemplate]); // JSON-string -> filter-state mit Date-objects
 
-  // *** [ date filter: session storage speichern ]
+  // *** [ active date filter ]: lokale Änderung / stored filter
+  const activeDateFilterState =
+    localDateFilterState?.storageKey === storageKey
+      ? localDateFilterState
+      : storedDateFilterState;
+
+  const dateFilter = activeDateFilterState.range;
+  const dateFilterTemplate = activeDateFilterState.template;
+
+  // *** [ ungültiger snapshot ]: aus session storage entfernen
   useEffect(() => {
-    if (!storageKey) return;
-    if (skipNextWrite.current) {
-      skipNextWrite.current = false;
-      return;
-    }
+    if (!storageKey || !storedDateFilterState.isInvalid) return;
 
-    const isDefaultRange =
-      dateFilter.from.getTime() === defaultRange.from.getTime() &&
-      dateFilter.to.getTime() === defaultRange.to.getTime();
-
-    if (isDefaultRange) {
-      sessionStorage.removeItem(storageKey);
-      return;
-    } // default range: nicht speichern
-
-    sessionStorage.setItem(
-      storageKey,
-      JSON.stringify(buildDateFilterForStorage(dateFilter, dateFilterTemplate))
-    ); // nicht default range: speichern
-  }, [storageKey, defaultRange, dateFilter, dateFilterTemplate]);
-
-  // *** [ picker range: aus date filter ]
-  useEffect(() => {
-    if (!isDatePickerOpen) return;
-
-    setPickerRange(dateFilter);
-    setPickerVisibleMonth(dateFilter.from);
-  }, [isDatePickerOpen, dateFilter]);
+    sessionStorage.removeItem(storageKey);
+  }, [storageKey, storedDateFilterState.isInvalid]);
 
   // *** [ HANDLERS ] **************************************************************
   // *** [ DateNav < > ] ***********************************************************
@@ -119,12 +121,40 @@ export default function useDateFilter(storageKey) {
     endDate,
     nextTemplate = dateFilterTemplate
   ) {
-    setDateFilter({ from: startDate, to: endDate });
-    setDateFilterTemplate(nextTemplate);
+    const nextRange = {
+      from: startDate,
+      to: endDate,
+    };
+
+    // *** [ state ] ********************************************
+    setLocalDateFilterState({
+      storageKey,
+      range: nextRange,
+      template: nextTemplate,
+    });
+
+    // *** [ session storage ] **********************************
+    if (!storageKey) return;
+
+    const isDefaultRange =
+      nextRange.from.getTime() === defaultRange.from.getTime() &&
+      nextRange.to.getTime() === defaultRange.to.getTime();
+
+    if (isDefaultRange) {
+      sessionStorage.removeItem(storageKey);
+      return;
+    } // default range: nicht in storage speichern
+
+    sessionStorage.setItem(
+      storageKey,
+      JSON.stringify(buildDateFilterForStorage(nextRange, nextTemplate))
+    ); // nicht default range: in storage speichern
   }
 
   // *** [ DatePicker ] ************************************************************
   function openPicker() {
+    setPickerRange(dateFilter);
+    setPickerVisibleMonth(dateFilter.from);
     setIsDatePickerOpen(true);
   }
 
