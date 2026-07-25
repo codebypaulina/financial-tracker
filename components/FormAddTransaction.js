@@ -12,7 +12,7 @@ import { TX_DESCRIPTION_MAX_LENGTH, TX_AMOUNT_MIN } from "@/utils/constants";
 
 export default function FormAddTransaction({
   initialCategoryId = "", // CategoryDetailsPage
-  initialCategorType = "Expense", // CategoryDetailsPage
+  initialCategoryType = "Expense", // CategoryDetailsPage
   onTxAdded, // CategoryDetailsPage
   closeForm, // AddingPage + CategoryDetailsPage
 }) {
@@ -28,11 +28,11 @@ export default function FormAddTransaction({
 
   // *** [ STATES ]
   const [currentCategoryId, setCurrentCategoryId] = useState(initialCategoryId); // ID für dropdown
-  const [typeFilter, setTypeFilter] = useState(initialCategorType); // type für dropdown-filter + ColorTag
+  const [typeFilter, setTypeFilter] = useState(initialCategoryType); // type für dropdown-filter + ColorTag
   const [lastSelectedCategoryIdByType, setLastSelectedCategoryIdByType] =
     useState({
-      Expense: initialCategorType === "Expense" ? initialCategoryId : "",
-      Income: initialCategorType === "Income" ? initialCategoryId : "",
+      Expense: initialCategoryType === "Expense" ? initialCategoryId : "",
+      Income: initialCategoryType === "Income" ? initialCategoryId : "",
     }); // zuletzt ausgewählte ID je type für dropdown-memory
 
   // *** [ SYNC ] **************************************************************************
