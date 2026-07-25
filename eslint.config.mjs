@@ -15,9 +15,6 @@ const eslintConfig = defineConfig([
           allowObject: true,
         },
       ],
-
-      // während next-16-upgrade nur als Warnung; bestehende effects danach einzeln refaktoren
-      "react-hooks/set-state-in-effect": "warn",
     },
   },
 
