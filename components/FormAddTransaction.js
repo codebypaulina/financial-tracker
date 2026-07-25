@@ -1,9 +1,9 @@
 import useSWR, { useSWRConfig } from "swr";
-import { useState } from "react";
 import { useSession } from "next-auth/react";
 import styled from "styled-components";
 
 import StatusMessage from "./layout/StatusMessage";
+import TransactionCategorySelect from "./TransactionCategorySelect";
 import CloseIcon from "@/public/icons/close.svg";
 import { Overlay, fixedCenteredStyles } from "./modal.styles";
 import useEscapeClose from "@/hooks/useEscapeClose";
@@ -25,15 +25,6 @@ export default function FormAddTransaction({
 
   // *** [ DATA-FETCH ]
   const { data: categories, error } = useSWR(getCategoriesKey(userId));
-
-  // *** [ STATES ]
-  const [currentCategoryId, setCurrentCategoryId] = useState(initialCategoryId); // ID für dropdown
-  const [typeFilter, setTypeFilter] = useState(initialCategoryType); // type für dropdown-filter + ColorTag
-  const [lastSelectedCategoryIdByType, setLastSelectedCategoryIdByType] =
-    useState({
-      Expense: initialCategoryType === "Expense" ? initialCategoryId : "",
-      Income: initialCategoryType === "Income" ? initialCategoryId : "",
-    }); // zuletzt ausgewählte ID je type für dropdown-memory
 
   // *** [ SYNC ] **************************************************************************
   useEscapeClose(true, closeForm); // ESC-listener
@@ -63,40 +54,7 @@ export default function FormAddTransaction({
     );
   }
 
-  // *** [ DERIVED DATA ] ******************************************************************
-  // *** [categories sortieren]: A-Z (für dropdown)
-  // undefined: user-locale // sensitivity: case- & accent-insensitive
-  const sortedCategories = [...categories].sort((a, b) =>
-    a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-  );
-
-  // *** [categories filtern]: nach type (für dropdown)
-  const filteredCategories = sortedCategories.filter(
-    (category) => category.type === typeFilter
-  );
-
   // *** [ HANDLERS ] **********************************************************************
-  // *** [ category-select ]
-  function handleCategoryChange(event) {
-    const selectedId = event.target.value;
-    setCurrentCategoryId(selectedId); // ausgewählte ID als aktuelle category
-
-    if (selectedId) {
-      setLastSelectedCategoryIdByType((prev) => ({
-        ...prev,
-        [typeFilter]: selectedId,
-      }));
-    } // wenn ID ausgewählt, dann diese in memory für aktiven type-filter
-  }
-
-  // *** [ type-filter-button ]
-  function toggleTypeFilter() {
-    const toggledType = typeFilter === "Expense" ? "Income" : "Expense";
-
-    setTypeFilter(toggledType);
-    setCurrentCategoryId(lastSelectedCategoryIdByType[toggledType] || ""); // memory für type / "Select"
-  }
-
   // *** [ save-button ]
   async function handleSubmit(event) {
     event.preventDefault();
@@ -167,36 +125,11 @@ export default function FormAddTransaction({
           </CloseButton>
         </FormHeader>
 
-        <label htmlFor="category">Category</label>
-        <CategoryGroup>
-          <select
-            id="category"
-            name="category"
-            aria-label="Select category"
-            title="Category"
-            value={currentCategoryId} // state
-            onChange={handleCategoryChange}
-            required
-          >
-            <option value="" disabled>
-              Select
-            </option>
-
-            {filteredCategories.map((category) => (
-              <option key={category._id} value={category._id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-
-          <ColorTag
-            type="button"
-            aria-label="Switch category filter"
-            title={`${typeFilter} (click to switch)`}
-            onClick={toggleTypeFilter}
-            $categoryType={typeFilter}
-          />
-        </CategoryGroup>
+        <TransactionCategorySelect
+          categories={categories}
+          initialCategoryId={initialCategoryId}
+          initialCategoryType={initialCategoryType}
+        />
 
         <label htmlFor="description">Description</label>
         <input
@@ -346,35 +279,5 @@ const CloseButton = styled.button`
     svg path[class*="X"] {
       fill: var(--color-text-primary);
     }
-  }
-`;
-
-const CategoryGroup = styled.div`
-  display: flex; // select + ColorTag nebeneinander
-  align-items: center; // ColorTag vertikal zentriert
-  gap: 0.75rem; // Abstand select + ColorTag
-  margin-bottom: 0.8rem; // Abstand Block Description
-
-  select {
-    flex: 1; // nimmt restlichen Platz in CategoryGroup
-    cursor: pointer;
-  }
-`;
-
-const ColorTag = styled.button`
-  width: 25px;
-  height: 25px;
-  border-radius: var(--radius-full);
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 1);
-
-  background-color: ${({ $categoryType }) =>
-    $categoryType === "Expense"
-      ? "var(--color-expense)"
-      : "var(--color-income)"};
-
-  &:hover {
-    transform: scale(1.07);
   }
 `;

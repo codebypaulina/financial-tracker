@@ -1,9 +1,10 @@
 import useSWR, { useSWRConfig } from "swr";
-import { useEffect, useState } from "react"; // effect + state: category-Änderung -> type-Änderung // state: ConfirmModal open/!open
+import { useState } from "react"; // ConfirmModal open/!open
 import { useSession } from "next-auth/react";
 import styled from "styled-components";
 
 import StatusMessage from "./layout/StatusMessage";
+import TransactionCategorySelect from "./TransactionCategorySelect";
 import CloseIcon from "@/public/icons/close.svg";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import { Overlay, fixedCenteredStyles } from "./modal.styles";
@@ -40,31 +41,9 @@ export default function FormEditTransaction({
 
   // *** [ STATES ]
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [currentCategoryId, setCurrentCategoryId] = useState(""); // category-state: ID für dropdown
-  const [typeFilter, setTypeFilter] = useState(""); // category-state: type für dropdown-filter + ColorTag
-  const [lastSelectedCategoryIdByType, setLastSelectedCategoryIdByType] =
-    useState({
-      Expense: "",
-      Income: "",
-    }); // category-state: zuletzt ausgewählte ID je type für dropdown-memory
 
   // *** [ SYNC ] **************************************************************************
-  // *** [ category-states ]
-  useEffect(() => {
-    if (!transaction?.category) return;
-
-    setCurrentCategoryId(transaction.category._id);
-    setTypeFilter(transaction.category.type);
-    setLastSelectedCategoryIdByType({
-      Expense:
-        transaction.category.type === "Expense" ? transaction.category._id : "",
-      Income:
-        transaction.category.type === "Income" ? transaction.category._id : "",
-    });
-  }, [transaction]);
-
-  // *** [ ESC-listener ]
-  useEscapeClose(!isConfirmOpen, closeForm);
+  useEscapeClose(!isConfirmOpen, closeForm); // ESC-listener
 
   // *** [ GUARDS ] ************************************************************************
   if (errorTransaction || errorCategories) {
@@ -91,42 +70,7 @@ export default function FormEditTransaction({
     );
   }
 
-  // *** [ DERIVED DATA ] ******************************************************************
-  // *** [categories sortieren]: A-Z (für dropdown)
-  // undefined: user-locale // sensitivity: case- & accent-insensitive
-  const sortedCategories = [...categories].sort((a, b) =>
-    a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-  );
-
-  // *** [categories filtern]: nach type (für dropdown)
-  const filteredCategories = sortedCategories.filter(
-    (category) => category.type === typeFilter
-  );
-
   // *** [ HANDLERS ] **********************************************************************
-  // *** [ category-select ]
-  function handleCategoryChange(event) {
-    const selectedId = event.target.value;
-    const selectedCategory = categories.find(
-      (category) => category._id === selectedId
-    );
-
-    setCurrentCategoryId(selectedId);
-    setTypeFilter(selectedCategory.type);
-    setLastSelectedCategoryIdByType((prev) => ({
-      ...prev,
-      [selectedCategory.type]: selectedId,
-    }));
-  }
-
-  // *** [ type-filter-button ]
-  function toggleTypeFilter() {
-    const toggledType = typeFilter === "Expense" ? "Income" : "Expense";
-
-    setTypeFilter(toggledType);
-    setCurrentCategoryId(lastSelectedCategoryIdByType[toggledType]);
-  }
-
   // *** [ save-button ]
   async function handleSubmit(event) {
     event.preventDefault();
@@ -260,36 +204,13 @@ export default function FormEditTransaction({
           </CloseButton>
         </FormHeader>
 
-        <label htmlFor="category">Category</label>
-        <CategoryGroup>
-          <select
-            id="category"
-            name="category"
-            aria-label="Update category"
-            title="Category"
-            value={currentCategoryId} // state
-            onChange={handleCategoryChange}
-            required
-          >
-            <option value="" disabled>
-              Select
-            </option>
-
-            {filteredCategories.map((category) => (
-              <option key={category._id} value={category._id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-
-          <ColorTag
-            type="button"
-            aria-label="Switch category filter"
-            title={`${typeFilter} (click to switch)`}
-            onClick={toggleTypeFilter}
-            $categoryType={typeFilter}
-          />
-        </CategoryGroup>
+        <TransactionCategorySelect
+          key={transaction._id}
+          categories={categories}
+          initialCategoryId={transaction.category._id}
+          initialCategoryType={transaction.category.type}
+          selectAriaLabel="Update category"
+        />
 
         <label htmlFor="description">Description</label>
         <input
@@ -438,36 +359,6 @@ const CloseButton = styled.button`
     svg path[class*="X"] {
       fill: var(--color-text-primary);
     }
-  }
-`;
-
-const CategoryGroup = styled.div`
-  display: flex; // select + ColorTag nebeneinander
-  align-items: center; // ColorTag vertikal zentriert
-  gap: 0.75rem; // Abstand select + ColorTag
-  margin-bottom: 0.8rem; // Abstand Block Description
-
-  select {
-    flex: 1; // nimmt restlichen Platz in CategoryGroup
-    cursor: pointer;
-  }
-`;
-
-const ColorTag = styled.button`
-  width: 25px;
-  height: 25px;
-  border-radius: var(--radius-full);
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 1);
-
-  background-color: ${({ $categoryType }) =>
-    $categoryType === "Expense"
-      ? "var(--color-expense)"
-      : "var(--color-income)"};
-
-  &:hover {
-    transform: scale(1.07);
   }
 `;
 
