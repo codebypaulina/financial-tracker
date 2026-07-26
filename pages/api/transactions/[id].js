@@ -65,7 +65,7 @@ export default async function handler(request, response) {
       const updatedTransaction = await Transaction.findOneAndUpdate(
         { _id: transactionId, userId: dbUserId },
         { category: categoryId, description, amount, date },
-        { new: true, runValidators: true } // geupdatete transaction
+        { returnDocument: "after", runValidators: true } // geupdatete transaction
       ).populate("category"); // mit category-object
 
       if (!updatedTransaction) {

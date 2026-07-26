@@ -74,7 +74,7 @@ export default async function handler(request, response) {
       const updatedCategory = await Category.findOneAndUpdate(
         { _id: categoryId, userId: dbUserId },
         fieldToUpdate,
-        { new: true, runValidators: true } // geupdatete category
+        { returnDocument: "after", runValidators: true } // geupdatete category
       );
 
       if (!updatedCategory) {
