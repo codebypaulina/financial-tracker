@@ -1,5 +1,5 @@
-import { DayPicker } from "react-day-picker";
-import "react-day-picker/style.css";
+import { DayPicker } from "@daypicker/react";
+import "@daypicker/react/style.css";
 import styled from "styled-components";
 
 import NavArrowButton from "@/components/NavArrowButton";
@@ -7,7 +7,7 @@ import { Overlay, fixedCenteredStyles } from "./modal.styles";
 import useEscapeClose from "@/hooks/useEscapeClose";
 
 // https://daypicker.dev/docs/styling
-// https://github.com/gpbl/react-day-picker/blob/main/src/style.css
+// https://github.com/gpbl/react-day-picker
 
 export default function DatePicker({
   pickerRange,
